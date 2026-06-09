@@ -24,7 +24,7 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
           <span>Vibehall</span>
         </button>
         <nav className="nav" aria-label="Primary navigation">
-          {routes.map((route) => (
+          {routes.filter((route) => route.showInPrimaryNav !== false).map((route) => (
             <button
               className={route.path === activeRoute.path ? "nav-item is-active" : "nav-item"}
               key={route.path}

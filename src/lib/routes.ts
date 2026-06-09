@@ -11,6 +11,7 @@ export type RouteDefinition = {
   component: ComponentType<{ onNavigate: (path: string) => void }>;
   label: string;
   path: string;
+  showInPrimaryNav?: boolean;
   title: string;
 };
 
@@ -43,6 +44,7 @@ export const routes: RouteDefinition[] = [
     component: AuthPage,
     label: "Auth",
     path: "/auth",
+    showInPrimaryNav: false,
     title: "Auth shell"
   },
   {
@@ -55,6 +57,7 @@ export const routes: RouteDefinition[] = [
     component: AdminShellPage,
     label: "Admin",
     path: "/admin",
+    showInPrimaryNav: false,
     title: "Admin shell"
   }
 ];
