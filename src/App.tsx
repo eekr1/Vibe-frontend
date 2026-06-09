@@ -3,7 +3,10 @@ import { AppShell } from "./components/AppShell";
 import { routes } from "./lib/routes";
 
 export function App() {
-  const [path, setPath] = useState(() => window.location.pathname);
+  const [locationPath, setLocationPath] = useState(
+    () => `${window.location.pathname}${window.location.search}`
+  );
+  const path = new URL(locationPath, window.location.origin).pathname;
 
   const activeRoute = useMemo(() => {
     return routes.find((route) => route.path === path) ?? routes[0];
@@ -11,11 +14,12 @@ export function App() {
 
   function navigate(nextPath: string) {
     window.history.pushState({}, "", nextPath);
-    setPath(new URL(nextPath, window.location.origin).pathname);
+    const nextUrl = new URL(nextPath, window.location.origin);
+    setLocationPath(`${nextUrl.pathname}${nextUrl.search}`);
   }
 
   useEffect(() => {
-    const handlePopState = () => setPath(window.location.pathname);
+    const handlePopState = () => setLocationPath(`${window.location.pathname}${window.location.search}`);
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);

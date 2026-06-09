@@ -11,7 +11,7 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
   const Page = activeRoute.component;
   const { currentUser, isCheckingSession, logout } = useAuth();
 
-  function navigateAuth(mode: "login" | "signup", returnTo = window.location.pathname) {
+  function navigateAuth(mode: "login" | "signup", returnTo = `${window.location.pathname}${window.location.search}`) {
     const params = new URLSearchParams({ mode, returnTo });
     onNavigate(`/auth?${params.toString()}`);
   }

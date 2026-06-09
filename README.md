@@ -3,6 +3,9 @@
 ## Purpose
 This directory is the frontend application base for Vibehall.
 
+This directory is also the standalone frontend Git repository. The parent `Vibehall/`
+folder is a local workspace only and is not required for frontend build or deploy.
+
 Planned stack:
 - React
 - Vite
@@ -17,13 +20,19 @@ The frontend owns:
 - loading, empty, error, denied, full, banned, and ended room states
 - responsive UI behavior
 
-## Contract Inputs
-Frontend implementation must follow:
-- `../Roads/project-foundation/02-system-definition/rest-contract-v1.md`
-- `../Roads/project-foundation/02-system-definition/websocket-contract-v1.md`
-- `../Roads/project-foundation/02-system-definition/shared-contract-v1.md`
+## Repository Boundary
+This repo should stay self-contained for GitHub, Render, and local frontend work.
+
+Use this repo's own scripts for build and deploy:
+- `npm.cmd run dev`
+- `npm.cmd run build`
+- `npm.cmd run typecheck`
+
+Canonical product and roadmap documents may exist one folder above in the local
+workspace at `../Roads/project-foundation/`, but they are not part of this Git
+repository and should not be required by CI or deployment.
 
 ## Current Wave Status
-Wave 3 adds auth state, login/signup UI, session lookup, logout, protected room-entry gate behavior, and post-auth return intent handling.
+Wave 9 adds the admin console with overview, users, rooms, reports, moderation history, categories management, admin access feedback, and debug visibility.
 
-Room creation, real discover data, and room entry implementation begin in later waves.
+The first full build wave sequence is complete. Release readiness now depends on deploy environment configuration and manual regression verification.

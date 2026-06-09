@@ -1,8 +1,10 @@
 import type { ComponentType } from "react";
 import { AdminShellPage } from "../pages/AdminShellPage";
 import { AuthPage } from "../pages/AuthPage";
+import { CreateRoomPage } from "../pages/CreateRoomPage";
 import { DiscoverShellPage } from "../pages/DiscoverShellPage";
 import { HomeShellPage } from "../pages/HomeShellPage";
+import { ProfileSettingsPage } from "../pages/ProfileSettingsPage";
 import { RoomShellPage } from "../pages/RoomShellPage";
 
 export type RouteDefinition = {
@@ -26,6 +28,12 @@ export const routes: RouteDefinition[] = [
     title: "Discover shell"
   },
   {
+    component: CreateRoomPage,
+    label: "Create",
+    path: "/create-room",
+    title: "Create a live room"
+  },
+  {
     component: RoomShellPage,
     label: "Room",
     path: "/room",
@@ -36,6 +44,12 @@ export const routes: RouteDefinition[] = [
     label: "Auth",
     path: "/auth",
     title: "Auth shell"
+  },
+  {
+    component: ProfileSettingsPage,
+    label: "Profile",
+    path: "/profile",
+    title: "Profile and settings"
   },
   {
     component: AdminShellPage,
