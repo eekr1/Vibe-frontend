@@ -39,14 +39,28 @@ export async function apiRequest<TData>(
   const response = await fetch(`${API_BASE_URL}${path}`, {
     body: options.body ? JSON.stringify(options.body) : undefined,
     credentials: "include",
-    headers: options.body
-      ? {
-          "Content-Type": "application/json"
-        }
-      : undefined,
+    headers: {
+      Accept: "application/json",
+      ...(options.body ? { "Content-Type": "application/json" } : {})
+    },
     method: options.method ?? "GET"
   });
-  const payload = (await response.json()) as ApiResponse<TData>;
+  const responseText = await response.text();
+  let payload: ApiResponse<TData>;
+
+  try {
+    payload = JSON.parse(responseText) as ApiResponse<TData>;
+  } catch {
+    throw new ApiClientError(
+      response.ok ? "The server returned an unreadable response." : "The server request failed.",
+      "HTTP_RESPONSE_INVALID",
+      {
+        path,
+        status: response.status,
+        text: responseText.slice(0, 300)
+      }
+    );
+  }
 
   if (!payload.ok) {
     throw new ApiClientError(payload.error.message, payload.error.code, payload.error.details);

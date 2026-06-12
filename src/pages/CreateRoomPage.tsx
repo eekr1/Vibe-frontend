@@ -5,6 +5,7 @@ import { ApiClientError } from "../lib/api";
 import {
   createRoom,
   listCategories,
+  type Room,
   type RoomCategory,
   type RoomVisibility
 } from "../rooms/roomApi";
@@ -17,7 +18,9 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
   const { currentUser, isCheckingSession } = useAuth();
   const [categories, setCategories] = useState<RoomCategory[]>([]);
   const [categoryId, setCategoryId] = useState("");
+  const [createdPrivateRoom, setCreatedPrivateRoom] = useState<Room | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [inviteCopyStatus, setInviteCopyStatus] = useState<string | null>(null);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [participantLimit, setParticipantLimit] = useState(8);
@@ -34,6 +37,11 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
     title.trim().length >= 3 &&
     sourceUrl.trim().length > 0 &&
     (visibility === "public" || privatePassword.trim().length >= 4);
+
+  const createdPrivateRoomPath = createdPrivateRoom ? `/room?roomId=${createdPrivateRoom.id}` : "";
+  const createdPrivateRoomUrl = createdPrivateRoom
+    ? `${window.location.origin}${createdPrivateRoomPath}`
+    : "";
 
   useEffect(() => {
     let isMounted = true;
@@ -72,7 +80,9 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setCreatedPrivateRoom(null);
     setError(null);
+    setInviteCopyStatus(null);
     setIsSubmitting(true);
 
     try {
@@ -85,7 +95,11 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
         visibility
       });
 
-      onNavigate(`/room?roomId=${room.id}`);
+      if (room.visibility === "private") {
+        setCreatedPrivateRoom(room);
+      } else {
+        onNavigate(`/room?roomId=${room.id}`);
+      }
     } catch (caughtError) {
       if (caughtError instanceof ApiClientError) {
         setError(caughtError.message);
@@ -94,6 +108,19 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleCopyInviteLink() {
+    if (!createdPrivateRoomUrl) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(createdPrivateRoomUrl);
+      setInviteCopyStatus("Invite link copied. Share it with the people you want in this private room.");
+    } catch {
+      setInviteCopyStatus("Copy failed. You can select the link manually below.");
     }
   }
 
@@ -209,6 +236,28 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
 
         {error ? <p className="form-error">{error}</p> : null}
 
+        {createdPrivateRoom ? (
+          <div className="private-invite-card">
+            <p className="eyebrow">Private room ready</p>
+            <h3>{createdPrivateRoom.title}</h3>
+            <p>Share this link to invite someone. They still need to log in and enter the room password.</p>
+            <input aria-label="Private room invite link" readOnly value={createdPrivateRoomUrl} />
+            {inviteCopyStatus ? <p className="state-banner success">{inviteCopyStatus}</p> : null}
+            <div className="action-row">
+              <button className="secondary-action compact" onClick={() => void handleCopyInviteLink()} type="button">
+                Copy invite link
+              </button>
+              <button
+                className="primary-action compact"
+                onClick={() => onNavigate(createdPrivateRoomPath)}
+                type="button"
+              >
+                Enter room
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <button
           className="primary-action full-width"
           disabled={!isReadyToCreate}
@@ -238,6 +287,10 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
         <p>
           A successful submit creates a room owned by the signed-in host, sets it live
           immediately, and routes you into `/room?roomId=...`.
+        </p>
+        <p>
+          Public rooms open immediately after creation. Private rooms pause here first so
+          you can copy the invite link before entering.
         </p>
         <p>
           If the host closes or leaves the room, backend state flips to ended immediately

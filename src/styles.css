@@ -288,6 +288,7 @@ button {
 
 .auth-panel label,
 .room-form label,
+.private-invite-card,
 .private-entry label {
   color: var(--muted);
   display: grid;
@@ -299,6 +300,7 @@ button {
 .auth-panel input,
 .room-form input,
 .room-form select,
+.private-invite-card input,
 .private-entry input {
   background: #0f1213;
   border: 1px solid var(--line);
@@ -312,6 +314,7 @@ button {
 .auth-panel input:focus,
 .room-form input:focus,
 .room-form select:focus,
+.private-invite-card input:focus,
 .private-entry input:focus {
   border-color: var(--accent-soft);
   outline: 2px solid rgba(242, 179, 125, 0.16);
@@ -386,7 +389,23 @@ button {
 
 .create-room-aside h3,
 .empty-state h3,
+.private-invite-card h3,
 .room-card h3 {
+  margin: 0;
+}
+
+.private-invite-card {
+  background: rgba(13, 15, 16, 0.46);
+  border: 1px solid rgba(101, 194, 143, 0.34);
+  border-radius: 8px;
+  gap: 0.8rem;
+  margin: 0 0 1rem;
+  padding: 1rem;
+}
+
+.private-invite-card p {
+  color: var(--muted);
+  line-height: 1.55;
   margin: 0;
 }
 
@@ -568,12 +587,48 @@ button {
   line-height: 1.65;
 }
 
+.room-hero-copy {
+  display: grid;
+  gap: 0.55rem;
+}
+
 .room-hero-actions {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
   justify-content: flex-end;
+}
+
+.room-meta-strip,
+.room-status-stack,
+.host-control-strip {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.room-meta-strip span,
+.host-control-strip {
+  background: rgba(13, 15, 16, 0.46);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.42rem 0.7rem;
+}
+
+.host-control-strip {
+  border-color: rgba(226, 81, 67, 0.38);
+  color: #ffd5d0;
+  padding: 0.35rem;
+  padding-left: 0.75rem;
+}
+
+.room-feedback-banner {
+  margin: 1rem 0;
 }
 
 .room-session-grid {
@@ -927,6 +982,10 @@ button {
   margin-top: 0;
 }
 
+.state-banner .action-row {
+  margin-top: 0.75rem;
+}
+
 .state-banner.success {
   background: rgba(101, 194, 143, 0.12);
   border-color: rgba(101, 194, 143, 0.32);
@@ -947,6 +1006,16 @@ button {
 
 .private-entry {
   margin: 1rem 0;
+}
+
+.private-entry h3 {
+  margin: 0;
+}
+
+.private-entry p {
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0;
 }
 
 .participant-panel {

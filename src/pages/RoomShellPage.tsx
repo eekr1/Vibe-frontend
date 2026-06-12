@@ -161,6 +161,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
   const [reportReason, setReportReason] = useState<ReportReason>("harassment");
   const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
+  const [roomLinkFeedback, setRoomLinkFeedback] = useState<string | null>(null);
   const [socketStatus, setSocketStatus] = useState<SocketStatus>("idle");
   const socketRef = useRef<RoomRealtimeSocket | null>(null);
   const roomId = readRoomId();
@@ -168,6 +169,8 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
   const isHost = currentUser?.id === room?.host.id;
   const isEnded = accessState === "ended" || room?.state === "ended";
   const canUseRoom = accessState === "joined" && participant?.state === "active" && !isEnded;
+  const roomSharePath = room ? `/room?roomId=${room.id}` : "";
+  const roomShareUrl = room ? `${window.location.origin}${roomSharePath}` : "";
 
   function appendMessage(message: RoomMessage) {
     setMessages((currentMessages) => {
@@ -238,6 +241,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       setReportFeedback(null);
       setReportTarget(null);
       setRoom(null);
+      setRoomLinkFeedback(null);
 
       try {
         const loadedRoom = await getRoom(activeRoomId);
@@ -611,8 +615,44 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     }
   }
 
+  async function handleCopyRoomLink() {
+    if (!roomShareUrl) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(roomShareUrl);
+      setRoomLinkFeedback(
+        room?.visibility === "private"
+          ? "Private room link copied. Invited members still need the password."
+          : "Room link copied."
+      );
+    } catch {
+      setRoomLinkFeedback("Copy failed. Select the room URL from your browser address bar.");
+    }
+  }
+
+  function handleReEnterRoom() {
+    if (!room) {
+      return;
+    }
+
+    setError(null);
+
+    if (room.visibility === "private" && !isHost) {
+      setAccessState("password_required");
+      return;
+    }
+
+    void joinAndLoadRoom(room.id);
+  }
+
   async function handleCloseRoom() {
     if (!room) {
+      return;
+    }
+
+    if (!window.confirm("Close this room for everyone? This will end the live session.")) {
       return;
     }
 
@@ -634,6 +674,10 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
 
   async function handleLeaveRoom() {
     if (!room) {
+      return;
+    }
+
+    if (isHost && !window.confirm("Leaving as host will end this room for everyone. Continue?")) {
       return;
     }
 
@@ -667,7 +711,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       <section className="surface-panel wide-panel">
         <div className="inline-loading">
           <span className="loader" />
-          Loading room session
+          Entering room session and checking access
         </div>
       </section>
     );
@@ -711,31 +755,47 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
   return (
     <section className="room-experience">
       <header className="room-hero">
-        <div>
+        <div className="room-hero-copy">
           <p className="eyebrow">
-            {room.visibility} room | {room.category.name}
+            {room.visibility} room
           </p>
           <h2>{room.title}</h2>
           <p>
-            Hosted by {room.host.displayName}
-            {isHost ? " | you are the host" : ""}.
+            Hosted by <strong>{room.host.displayName}</strong>
+            {isHost ? " | you are the host and room operator" : " | participant view"}.
           </p>
+          <div className="room-meta-strip">
+            <span>{room.category.name}</span>
+            <span>{room.activeParticipantCount}/{room.participantLimit} active</span>
+            <span>{room.visibility === "private" ? "Invite link + password" : "Discoverable public room"}</span>
+            <span>{room.source.provider}</span>
+          </div>
         </div>
         <div className="room-hero-actions">
-          <span className={`socket-pill ${socketStatus}`}>Socket: {socketStatus}</span>
-          <span className={`state-pill ${room.state}`}>{room.state}</span>
+          <div className="room-status-stack">
+            <span className={`socket-pill ${socketStatus}`}>Socket: {socketStatus}</span>
+            <span className={`state-pill ${room.state}`}>{room.state}</span>
+          </div>
+          <button className="secondary-action compact" onClick={() => void handleCopyRoomLink()} type="button">
+            Copy room link
+          </button>
           {isHost && !isEnded ? (
-            <button className="primary-action compact" disabled={isClosing} onClick={() => void handleCloseRoom()} type="button">
-              {isClosing ? "Closing..." : "Close room"}
-            </button>
+            <div className="host-control-strip" aria-label="Host room controls">
+              <span>Host controls</span>
+              <button className="danger-action compact" disabled={isClosing} onClick={() => void handleCloseRoom()} type="button">
+                {isClosing ? "Closing..." : "Close room"}
+              </button>
+            </div>
           ) : null}
           {canUseRoom ? (
             <button className="secondary-action compact" disabled={isLeaving} onClick={() => void handleLeaveRoom()} type="button">
-              {isLeaving ? "Leaving..." : isHost ? "Leave and end" : "Leave room"}
+              {isLeaving ? "Leaving..." : isHost ? "Leave and end room" : "Leave room"}
             </button>
           ) : null}
         </div>
       </header>
+
+      {roomLinkFeedback ? <p className="state-banner success room-feedback-banner">{roomLinkFeedback}</p> : null}
 
       <div className="room-session-grid">
         <main className="watch-panel">
@@ -747,59 +807,81 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
           </div>
 
           {isEnded ? (
-            <p className="state-banner">This room has ended. Chat and watch surfaces are closed.</p>
+            <div className="state-banner">
+              <p>This room has ended. Chat and watch surfaces are closed for this session.</p>
+              <div className="action-row">
+                <button className="secondary-action compact" onClick={() => onNavigate("/discover")} type="button">
+                  Back to Discover
+                </button>
+                <button className="primary-action compact" onClick={() => onNavigate("/create-room")} type="button">
+                  Create a new room
+                </button>
+              </div>
+            </div>
           ) : accessState === "full" ? (
-            <p className="state-banner danger">This room is full. Chat and watch surfaces are locked.</p>
+            <div className="state-banner danger">
+              <p>This room is full right now. Chat and watch surfaces are locked until a spot opens.</p>
+              <button className="secondary-action compact" onClick={() => onNavigate("/discover")} type="button">
+                Find another room
+              </button>
+            </div>
           ) : accessState === "banned" ? (
-            <p className="state-banner danger">You are banned from rejoining this room.</p>
+            <div className="state-banner danger">
+              <p>You are banned from rejoining this room. A direct room link or password cannot bypass this.</p>
+              <button className="secondary-action compact" onClick={() => onNavigate("/discover")} type="button">
+                Back to Discover
+              </button>
+            </div>
           ) : accessState === "kicked" ? (
             <div className="state-banner">
               <p>You were removed from this room by the host. You may try to re-enter if the host has not banned you.</p>
-              <button
-                className="secondary-action compact"
-                onClick={() => {
-                  if (room.visibility === "private" && !isHost) {
-                    setAccessState("password_required");
-                  } else {
-                    void joinAndLoadRoom(room.id);
-                  }
-                }}
-                type="button"
-              >
-                Try re-entering
-              </button>
+              <div className="action-row">
+                <button className="secondary-action compact" onClick={handleReEnterRoom} type="button">
+                  Try re-entering
+                </button>
+                <button className="text-action compact" onClick={() => onNavigate("/discover")} type="button">
+                  Back to Discover
+                </button>
+              </div>
             </div>
           ) : accessState === "left" ? (
             <div className="state-banner">
-              <p>You left this room. Chat and watch surfaces are paused for you.</p>
-              <button
-                className="secondary-action compact"
-                onClick={() => {
-                  if (room.visibility === "private" && !isHost) {
-                    setAccessState("password_required");
-                  } else {
-                    void joinAndLoadRoom(room.id);
-                  }
-                }}
-                type="button"
-              >
-                Re-enter room
-              </button>
+              <p>You left this room. Chat and watch surfaces are paused for you, but you can re-enter while it stays live.</p>
+              <div className="action-row">
+                <button className="secondary-action compact" onClick={handleReEnterRoom} type="button">
+                  Re-enter room
+                </button>
+                <button className="text-action compact" onClick={() => onNavigate("/discover")} type="button">
+                  Back to Discover
+                </button>
+              </div>
             </div>
           ) : accessState === "password_required" ? (
             <form className="private-entry state-card" onSubmit={handlePrivatePassword}>
+              <div>
+                <p className="eyebrow">Private room entry</p>
+                <h3>Enter the room password.</h3>
+                <p>This room is hidden from Discover. The invite link gets you here, but the password opens the room.</p>
+              </div>
               <label>
                 Private room password
                 <input
                   onChange={(event) => setPrivatePassword(event.target.value)}
+                  placeholder="Password from the host"
                   required
                   type="password"
                   value={privatePassword}
                 />
               </label>
-              <button className="primary-action full-width" disabled={isUnlocking} type="submit">
-                {isUnlocking ? "Checking..." : "Enter private room"}
-              </button>
+              {error ? <p className="form-error">{error}</p> : null}
+              <div className="action-row">
+                <button className="primary-action compact" disabled={isUnlocking} type="submit">
+                  {isUnlocking ? "Checking..." : "Enter private room"}
+                </button>
+                <button className="secondary-action compact" onClick={() => onNavigate("/discover")} type="button">
+                  Back to Discover
+                </button>
+              </div>
             </form>
           ) : canUseRoom ? (
             <div className="playback-panel">
@@ -843,6 +925,10 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
             {room.activeParticipantCount}/{room.participantLimit} active
           </h3>
           <dl className="room-facts">
+            <div>
+              <dt>Host</dt>
+              <dd>{room.host.displayName}</dd>
+            </div>
             <div>
               <dt>Your state</dt>
               <dd>{participant?.state ?? accessState}</dd>
@@ -909,7 +995,13 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                 </li>
               ))}
             </ul>
-          ) : null}
+          ) : (
+            <p className="empty-state">
+              {canUseRoom
+                ? "Presence is warming up. Connected participants will appear here."
+                : "Participants become visible after you enter the room."}
+            </p>
+          )}
           <div className="report-panel">
             <div className="report-panel-header">
               <div>
@@ -977,7 +1069,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
           </div>
           {moderationFeedback ? <p className="state-banner success">{moderationFeedback}</p> : null}
           {reportFeedback ? <p className="state-banner success">{reportFeedback}</p> : null}
-          {error ? <p className="form-error">{error}</p> : null}
+          {error && accessState !== "password_required" ? <p className="form-error">{error}</p> : null}
           {realtimeError ? <p className="form-error">{realtimeError}</p> : null}
         </aside>
 
