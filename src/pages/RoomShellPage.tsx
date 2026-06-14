@@ -22,6 +22,7 @@ import {
 } from "../rooms/roomApi";
 import {
   createRoomRealtimeSocket,
+  type PlaybackActionType,
   type PlaybackState,
   type RoomRealtimeSocket
 } from "../rooms/realtimeClient";
@@ -574,7 +575,11 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     setPlaybackDuration(Math.max(0, durationSeconds));
   }
 
-  async function handlePlaybackSet(status: PlaybackState["status"], positionSeconds = playbackPosition) {
+  async function handlePlaybackSet(
+    status: PlaybackState["status"],
+    positionSeconds = playbackPosition,
+    actionType: PlaybackActionType = status === "playing" ? "play" : "pause"
+  ) {
     if (!room) {
       return;
     }
@@ -590,6 +595,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     socket.emit(
       "playback.state.set",
       {
+        actionType,
         positionSeconds: nextPosition,
         requestId: makeRequestId(),
         roomId: room.id,
@@ -613,7 +619,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
   }
 
   function handleSeekPlayback() {
-    void handlePlaybackSet(playback.status, seekTargetSeconds);
+    void handlePlaybackSet(playback.status, seekTargetSeconds, "seek");
   }
 
   function handleSeekTargetChange(value: number) {
@@ -625,7 +631,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     const nextTarget = clampPlaybackPosition(playbackPosition + offsetSeconds, playbackDuration);
     setSeekTargetSeconds(nextTarget);
     setIsAdjustingSeek(false);
-    void handlePlaybackSet(playback.status, nextTarget);
+    void handlePlaybackSet(playback.status, nextTarget, offsetSeconds < 0 ? "jump_backward" : "jump_forward");
   }
 
   async function handleModerationAction(targetUserId: string, actionType: ModerationActionType) {

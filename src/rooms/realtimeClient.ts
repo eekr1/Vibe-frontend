@@ -9,6 +9,8 @@ export type PlaybackState = {
   updatedAt: string;
 };
 
+export type PlaybackActionType = "jump_backward" | "jump_forward" | "pause" | "play" | "seek";
+
 export type RealtimeEnvelope<TPayload> = TPayload & {
   eventId: string;
   occurredAt: string;
@@ -94,6 +96,7 @@ type ClientToServerEvents = {
   ) => void;
   "playback.state.set": (
     payload: {
+      actionType?: PlaybackActionType;
       positionSeconds: number;
       requestId: string;
       roomId: string;
