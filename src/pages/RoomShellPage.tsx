@@ -25,6 +25,7 @@ import {
   type PlaybackState,
   type RoomRealtimeSocket
 } from "../rooms/realtimeClient";
+import { YouTubeRoomPlayer } from "../rooms/YouTubeRoomPlayer";
 
 type RoomShellPageProps = {
   onNavigate: (path: string) => void;
@@ -147,12 +148,14 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
   const [messageBody, setMessageBody] = useState("");
   const [messages, setMessages] = useState<RoomMessage[]>([]);
   const [moderationFeedback, setModerationFeedback] = useState<string | null>(null);
   const [participant, setParticipant] = useState<RoomParticipant | null>(null);
   const [playback, setPlayback] = useState<PlaybackState>(defaultPlayback);
   const [playbackPosition, setPlaybackPosition] = useState(0);
+  const [playerError, setPlayerError] = useState<string | null>(null);
   const [presenceParticipants, setPresenceParticipants] = useState<RoomParticipant[]>([]);
   const [privatePassword, setPrivatePassword] = useState("");
   const [realtimeError, setRealtimeError] = useState<string | null>(null);
@@ -235,6 +238,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       setParticipant(null);
       setPlayback(defaultPlayback);
       setPlaybackPosition(0);
+      setPlayerError(null);
       setPresenceParticipants([]);
       setRealtimeError(null);
       setReportDetails("");
@@ -525,7 +529,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     }
   }
 
-  async function handlePlaybackSet(status: PlaybackState["status"]) {
+  async function handlePlaybackSet(status: PlaybackState["status"], positionSeconds = playbackPosition) {
     if (!room) {
       return;
     }
@@ -540,7 +544,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     socket.emit(
       "playback.state.set",
       {
-        positionSeconds: playbackPosition,
+        positionSeconds: Math.max(0, positionSeconds),
         requestId: makeRequestId(),
         roomId: room.id,
         sourceTime: new Date().toISOString(),
@@ -549,9 +553,19 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       (ack) => {
         if (!ack.ok) {
           setRealtimeError(ack.error.message);
+          return;
+        }
+
+        if (ack.data?.playback) {
+          setPlayback(ack.data.playback);
+          setPlaybackPosition(ack.data.playback.positionSeconds);
         }
       }
     );
+  }
+
+  function handleSeekPlayback() {
+    void handlePlaybackSet(playback.status, playbackPosition);
   }
 
   async function handleModerationAction(targetUserId: string, actionType: ModerationActionType) {
@@ -799,12 +813,25 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
 
       <div className="room-session-grid">
         <main className="watch-panel">
-          <div className="video-plane">
-            {room.source.thumbnailUrl ? <img alt="" src={room.source.thumbnailUrl} /> : null}
-            <div className="video-plane-overlay">
-              <span>{canUseRoom ? "Watch surface ready" : isEnded ? "Room ended" : "Entry required"}</span>
+          {canUseRoom ? (
+            <YouTubeRoomPlayer
+              canUseRoom={canUseRoom}
+              isEnded={isEnded}
+              isHost={Boolean(isHost)}
+              onPlayerError={setPlayerError}
+              onPlayerReady={setIsPlayerReady}
+              onTimeUpdate={setPlaybackPosition}
+              playback={playback}
+              videoId={room.source.videoId}
+            />
+          ) : (
+            <div className="video-plane">
+              {room.source.thumbnailUrl ? <img alt="" src={room.source.thumbnailUrl} /> : null}
+              <div className="video-plane-overlay">
+                <span>{isEnded ? "Room ended" : "Entry required"}</span>
+              </div>
             </div>
-          </div>
+          )}
 
           {isEnded ? (
             <div className="state-banner">
@@ -886,11 +913,12 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
           ) : canUseRoom ? (
             <div className="playback-panel">
               <div>
-                <p className="eyebrow">Shared playback</p>
+                <p className="eyebrow">Shared YouTube playback</p>
                 <h3>{playback.status}</h3>
                 <p>
-                  Position {Math.round(playback.positionSeconds)}s | Updated {formatMessageTime(playback.updatedAt)}
+                  Position {Math.round(playbackPosition)}s | Last host sync {formatMessageTime(playback.updatedAt)}
                 </p>
+                {playerError ? <p className="form-error">{playerError}</p> : null}
               </div>
               {isHost ? (
                 <div className="playback-controls">
@@ -903,15 +931,33 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                       value={playbackPosition}
                     />
                   </label>
-                  <button className="secondary-action compact" onClick={() => void handlePlaybackSet("paused")} type="button">
+                  <button
+                    className="secondary-action compact"
+                    disabled={!isPlayerReady}
+                    onClick={handleSeekPlayback}
+                    type="button"
+                  >
+                    Seek
+                  </button>
+                  <button
+                    className="secondary-action compact"
+                    disabled={!isPlayerReady}
+                    onClick={() => void handlePlaybackSet("paused")}
+                    type="button"
+                  >
                     Pause
                   </button>
-                  <button className="primary-action compact" onClick={() => void handlePlaybackSet("playing")} type="button">
+                  <button
+                    className="primary-action compact"
+                    disabled={!isPlayerReady}
+                    onClick={() => void handlePlaybackSet("playing")}
+                    type="button"
+                  >
                     Play
                   </button>
                 </div>
               ) : (
-                <p className="state-banner success">Realtime playback state is synced from the host.</p>
+                <p className="state-banner success">Realtime playback follows the host. You can chat, but the timeline stays host-led.</p>
               )}
             </div>
           ) : (

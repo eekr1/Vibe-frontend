@@ -889,6 +889,64 @@ button {
   position: relative;
 }
 
+.youtube-room-player {
+  aspect-ratio: 16 / 9;
+  background:
+    linear-gradient(135deg, rgba(226, 81, 67, 0.14), rgba(242, 179, 125, 0.08)),
+    #080909;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-height: 18rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.youtube-iframe-target,
+.youtube-iframe-target iframe {
+  border: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.youtube-room-player.participant-locked .youtube-iframe-target {
+  pointer-events: none;
+}
+
+.youtube-player-state {
+  align-items: center;
+  background: rgba(8, 9, 9, 0.72);
+  color: var(--text);
+  display: flex;
+  font-weight: 800;
+  gap: 0.8rem;
+  inset: 0;
+  justify-content: center;
+  position: absolute;
+  z-index: 2;
+}
+
+.youtube-player-state.danger {
+  color: #ffd5d0;
+}
+
+.participant-playback-lock {
+  align-items: center;
+  background: linear-gradient(180deg, transparent, rgba(8, 9, 9, 0.72));
+  bottom: 0;
+  color: var(--text);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.86rem;
+  font-weight: 800;
+  gap: 0.65rem;
+  justify-content: space-between;
+  left: 0;
+  padding: 0.85rem;
+  position: absolute;
+  right: 0;
+  z-index: 3;
+}
+
 .room-side {
   background: var(--panel);
   border: 1px solid var(--line);
