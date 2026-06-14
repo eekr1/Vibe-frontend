@@ -136,6 +136,29 @@ function formatMessageTime(value: string) {
   }).format(new Date(value));
 }
 
+function formatPlaybackTime(value: number) {
+  const safeValue = Math.max(0, Math.floor(value));
+  const hours = Math.floor(safeValue / 3600);
+  const minutes = Math.floor((safeValue % 3600) / 60);
+  const seconds = safeValue % 60;
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  }
+
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function clampPlaybackPosition(value: number, durationSeconds: number) {
+  const safeValue = Number.isFinite(value) ? value : 0;
+
+  if (durationSeconds > 0) {
+    return Math.min(Math.max(0, safeValue), durationSeconds);
+  }
+
+  return Math.max(0, safeValue);
+}
+
 export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
   const { currentUser, isCheckingSession } = useAuth();
   const [accessState, setAccessState] = useState<AccessState>("checking");
@@ -154,6 +177,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
   const [moderationFeedback, setModerationFeedback] = useState<string | null>(null);
   const [participant, setParticipant] = useState<RoomParticipant | null>(null);
   const [playback, setPlayback] = useState<PlaybackState>(defaultPlayback);
+  const [playbackDuration, setPlaybackDuration] = useState(0);
   const [playbackPosition, setPlaybackPosition] = useState(0);
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [presenceParticipants, setPresenceParticipants] = useState<RoomParticipant[]>([]);
@@ -165,6 +189,8 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
   const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
   const [room, setRoom] = useState<Room | null>(null);
   const [roomLinkFeedback, setRoomLinkFeedback] = useState<string | null>(null);
+  const [seekTargetSeconds, setSeekTargetSeconds] = useState(0);
+  const [isAdjustingSeek, setIsAdjustingSeek] = useState(false);
   const [socketStatus, setSocketStatus] = useState<SocketStatus>("idle");
   const socketRef = useRef<RoomRealtimeSocket | null>(null);
   const roomId = readRoomId();
@@ -237,7 +263,10 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       setModerationFeedback(null);
       setParticipant(null);
       setPlayback(defaultPlayback);
+      setPlaybackDuration(0);
       setPlaybackPosition(0);
+      setSeekTargetSeconds(0);
+      setIsAdjustingSeek(false);
       setPlayerError(null);
       setPresenceParticipants([]);
       setRealtimeError(null);
@@ -362,6 +391,8 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       setPresenceParticipants(payload.participants);
       setPlayback(payload.playback);
       setPlaybackPosition(payload.playback.positionSeconds);
+      setSeekTargetSeconds(payload.playback.positionSeconds);
+      setIsAdjustingSeek(false);
 
       const currentParticipant = payload.participants.find(
         (nextParticipant) => nextParticipant.user.id === currentUser.id
@@ -405,6 +436,8 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     socket.on("playback.state.updated", (payload) => {
       setPlayback(payload.playback);
       setPlaybackPosition(payload.playback.positionSeconds);
+      setSeekTargetSeconds(payload.playback.positionSeconds);
+      setIsAdjustingSeek(false);
     });
 
     socket.on("room.access.revoked", (payload) => {
@@ -529,12 +562,25 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     }
   }
 
+  function handlePlaybackTimeUpdate(positionSeconds: number) {
+    setPlaybackPosition(positionSeconds);
+
+    if (!isAdjustingSeek) {
+      setSeekTargetSeconds(positionSeconds);
+    }
+  }
+
+  function handlePlaybackDurationUpdate(durationSeconds: number) {
+    setPlaybackDuration(Math.max(0, durationSeconds));
+  }
+
   async function handlePlaybackSet(status: PlaybackState["status"], positionSeconds = playbackPosition) {
     if (!room) {
       return;
     }
 
     const socket = socketRef.current;
+    const nextPosition = clampPlaybackPosition(positionSeconds, playbackDuration);
 
     if (!socket?.connected) {
       setRealtimeError("Socket is not connected yet.");
@@ -544,7 +590,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     socket.emit(
       "playback.state.set",
       {
-        positionSeconds: Math.max(0, positionSeconds),
+        positionSeconds: nextPosition,
         requestId: makeRequestId(),
         roomId: room.id,
         sourceTime: new Date().toISOString(),
@@ -559,13 +605,27 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
         if (ack.data?.playback) {
           setPlayback(ack.data.playback);
           setPlaybackPosition(ack.data.playback.positionSeconds);
+          setSeekTargetSeconds(ack.data.playback.positionSeconds);
+          setIsAdjustingSeek(false);
         }
       }
     );
   }
 
   function handleSeekPlayback() {
-    void handlePlaybackSet(playback.status, playbackPosition);
+    void handlePlaybackSet(playback.status, seekTargetSeconds);
+  }
+
+  function handleSeekTargetChange(value: number) {
+    setIsAdjustingSeek(true);
+    setSeekTargetSeconds(clampPlaybackPosition(value, playbackDuration));
+  }
+
+  function handleJumpSeek(offsetSeconds: number) {
+    const nextTarget = clampPlaybackPosition(playbackPosition + offsetSeconds, playbackDuration);
+    setSeekTargetSeconds(nextTarget);
+    setIsAdjustingSeek(false);
+    void handlePlaybackSet(playback.status, nextTarget);
   }
 
   async function handleModerationAction(targetUserId: string, actionType: ModerationActionType) {
@@ -818,9 +878,10 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
               canUseRoom={canUseRoom}
               isEnded={isEnded}
               isHost={Boolean(isHost)}
+              onDurationUpdate={handlePlaybackDurationUpdate}
               onPlayerError={setPlayerError}
               onPlayerReady={setIsPlayerReady}
-              onTimeUpdate={setPlaybackPosition}
+              onTimeUpdate={handlePlaybackTimeUpdate}
               playback={playback}
               videoId={room.source.videoId}
             />
@@ -916,28 +977,56 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                 <p className="eyebrow">Shared YouTube playback</p>
                 <h3>{playback.status}</h3>
                 <p>
-                  Position {Math.round(playbackPosition)}s | Last host sync {formatMessageTime(playback.updatedAt)}
+                  Position {formatPlaybackTime(playbackPosition)} / {playbackDuration > 0 ? formatPlaybackTime(playbackDuration) : "--:--"} | Last host sync {formatMessageTime(playback.updatedAt)}
                 </p>
                 {playerError ? <p className="form-error">{playerError}</p> : null}
               </div>
               {isHost ? (
                 <div className="playback-controls">
-                  <label>
-                    Position seconds
+                  <div className="playback-timeline">
+                    <div className="timeline-label-row">
+                      <span>Timeline</span>
+                      <strong>{formatPlaybackTime(seekTargetSeconds)}</strong>
+                    </div>
                     <input
+                      aria-label="Playback timeline"
+                      disabled={!isPlayerReady || playbackDuration <= 0}
+                      max={Math.max(1, Math.floor(playbackDuration || seekTargetSeconds || playbackPosition || 1))}
                       min={0}
-                      onChange={(event) => setPlaybackPosition(Number(event.target.value))}
-                      type="number"
-                      value={playbackPosition}
+                      onChange={(event) => handleSeekTargetChange(Number(event.target.value))}
+                      step={1}
+                      type="range"
+                      value={clampPlaybackPosition(seekTargetSeconds, playbackDuration)}
                     />
-                  </label>
+                    <p>
+                      Drag the timeline, then sync the room to that moment.
+                    </p>
+                  </div>
+                  <div className="playback-jump-row">
+                    <button
+                      className="secondary-action compact"
+                      disabled={!isPlayerReady}
+                      onClick={() => handleJumpSeek(-10)}
+                      type="button"
+                    >
+                      -10s
+                    </button>
+                    <button
+                      className="secondary-action compact"
+                      disabled={!isPlayerReady}
+                      onClick={() => handleJumpSeek(10)}
+                      type="button"
+                    >
+                      +10s
+                    </button>
+                  </div>
                   <button
                     className="secondary-action compact"
                     disabled={!isPlayerReady}
                     onClick={handleSeekPlayback}
                     type="button"
                   >
-                    Seek
+                    Sync to timeline
                   </button>
                   <button
                     className="secondary-action compact"

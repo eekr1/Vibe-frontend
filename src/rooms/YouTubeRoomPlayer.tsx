@@ -5,6 +5,7 @@ type YouTubeRoomPlayerProps = {
   canUseRoom: boolean;
   isEnded: boolean;
   isHost: boolean;
+  onDurationUpdate: (durationSeconds: number) => void;
   onPlayerError: (message: string | null) => void;
   onPlayerReady: (isReady: boolean) => void;
   onTimeUpdate: (positionSeconds: number) => void;
@@ -20,6 +21,7 @@ type YouTubePlayerEvent = {
 type YouTubePlayer = {
   destroy: () => void;
   getCurrentTime: () => number;
+  getDuration: () => number;
   getPlayerState: () => number;
   pauseVideo: () => void;
   playVideo: () => void;
@@ -134,6 +136,7 @@ export function YouTubeRoomPlayer({
   canUseRoom,
   isEnded,
   isHost,
+  onDurationUpdate,
   onPlayerError,
   onPlayerReady,
   onTimeUpdate,
@@ -143,8 +146,19 @@ export function YouTubeRoomPlayer({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YouTubePlayer | null>(null);
   const isApplyingRemoteStateRef = useRef(false);
+  const onDurationUpdateRef = useRef(onDurationUpdate);
+  const onPlayerErrorRef = useRef(onPlayerError);
+  const onPlayerReadyRef = useRef(onPlayerReady);
+  const onTimeUpdateRef = useRef(onTimeUpdate);
   const [participantPlaybackEnabled, setParticipantPlaybackEnabled] = useState(isHost);
   const [loadState, setLoadState] = useState<"error" | "loading" | "ready">("loading");
+
+  useEffect(() => {
+    onDurationUpdateRef.current = onDurationUpdate;
+    onPlayerErrorRef.current = onPlayerError;
+    onPlayerReadyRef.current = onPlayerReady;
+    onTimeUpdateRef.current = onTimeUpdate;
+  }, [onDurationUpdate, onPlayerError, onPlayerReady, onTimeUpdate]);
 
   useEffect(() => {
     let isMounted = true;
@@ -152,8 +166,8 @@ export function YouTubeRoomPlayer({
 
     setLoadState("loading");
     setParticipantPlaybackEnabled(isHost);
-    onPlayerReady(false);
-    onPlayerError(null);
+    onPlayerReadyRef.current(false);
+    onPlayerErrorRef.current(null);
 
     void loadYouTubeApi()
       .then(() => {
@@ -166,14 +180,15 @@ export function YouTubeRoomPlayer({
             onError: (event) => {
               const message = getPlayerErrorMessage(event.data);
               setLoadState("error");
-              onPlayerError(message);
-              onPlayerReady(false);
+              onPlayerErrorRef.current(message);
+              onPlayerReadyRef.current(false);
             },
             onReady: () => {
               playerRef.current = player;
               setLoadState("ready");
-              onPlayerReady(true);
-              onPlayerError(null);
+              onPlayerReadyRef.current(true);
+              onPlayerErrorRef.current(null);
+              onDurationUpdateRef.current(player?.getDuration() ?? 0);
             },
             onStateChange: (event) => {
               if (!isHost || isApplyingRemoteStateRef.current) {
@@ -184,7 +199,7 @@ export function YouTubeRoomPlayer({
                 event.data === window.YT?.PlayerState.PAUSED ||
                 event.data === window.YT?.PlayerState.PLAYING
               ) {
-                onTimeUpdate(event.target.getCurrentTime());
+                onTimeUpdateRef.current(event.target.getCurrentTime());
               }
             }
           },
@@ -205,17 +220,18 @@ export function YouTubeRoomPlayer({
         }
 
         setLoadState("error");
-        onPlayerReady(false);
-        onPlayerError(error instanceof Error ? error.message : "YouTube player API could not load.");
+        onPlayerReadyRef.current(false);
+        onPlayerErrorRef.current(error instanceof Error ? error.message : "YouTube player API could not load.");
       });
 
     return () => {
       isMounted = false;
-      onPlayerReady(false);
+      onPlayerReadyRef.current(false);
+      onDurationUpdateRef.current(0);
       playerRef.current = null;
       player?.destroy();
     };
-  }, [isHost, onPlayerError, onPlayerReady, onTimeUpdate, videoId]);
+  }, [isHost, videoId]);
 
   useEffect(() => {
     if (!canUseRoom || isEnded || !playerRef.current || loadState !== "ready") {
@@ -256,11 +272,12 @@ export function YouTubeRoomPlayer({
         return;
       }
 
-      onTimeUpdate(player.getCurrentTime());
+      onTimeUpdateRef.current(player.getCurrentTime());
+      onDurationUpdateRef.current(player.getDuration());
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [canUseRoom, loadState, onTimeUpdate]);
+  }, [canUseRoom, loadState]);
 
   return (
     <div className={isHost ? "youtube-room-player" : "youtube-room-player participant-locked"}>
