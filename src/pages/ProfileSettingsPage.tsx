@@ -115,8 +115,8 @@ export function ProfileSettingsPage({ onNavigate }: ProfileSettingsPageProps) {
         <p className="eyebrow">Member continuity</p>
         <h2>Your profile</h2>
         <p>
-          Keep your room identity recognizable. These fields are used in rooms, chat, reports, and moderation
-          context.
+          Keep your room identity recognizable. These fields appear in rooms, chat,
+          reports, moderation context, and admin review screens.
         </p>
         <dl className="room-facts">
           <div>
@@ -160,6 +160,9 @@ export function ProfileSettingsPage({ onNavigate }: ProfileSettingsPageProps) {
         </label>
         {error ? <p className="form-error">{error}</p> : null}
         {success ? <p className="state-banner success">{success}</p> : null}
+        {!avatarUrl.trim() ? (
+          <p className="state-banner">Avatar URL is optional. Leaving it blank keeps your profile text-only.</p>
+        ) : null}
         <button className="primary-action" disabled={isSaving || !displayName.trim()} type="submit">
           {isSaving ? "Saving..." : "Save profile settings"}
         </button>

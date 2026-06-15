@@ -73,6 +73,11 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
       <form className="auth-panel" onSubmit={handleSubmit}>
         <p className="eyebrow">{mode === "login" ? "Member login" : "Create account"}</p>
         <h2>{mode === "login" ? "Log in to continue" : "Join Vibehall"}</h2>
+        <p className="form-intro">
+          {returnTo === "/"
+            ? "Your account keeps room ownership, chat identity, and moderation history traceable."
+            : "After this step, we will send you back to the room or admin flow you started."}
+        </p>
 
         {mode === "login" ? (
           <label>

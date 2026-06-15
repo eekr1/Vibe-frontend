@@ -141,8 +141,8 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
         <p className="eyebrow">Create room</p>
         <h2>Start a host-owned live room.</h2>
         <p className="form-intro">
-          This form now talks to the real room API: backend validates the YouTube
-          source, category, visibility, capacity, and creates the room live immediately.
+          Paste a YouTube link, choose the room shape, and Vibehall will create a live
+          session owned by you.
         </p>
 
         <label>
@@ -268,8 +268,8 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
       </form>
 
       <aside className="create-room-aside">
-        <p className="eyebrow">Debug promise</p>
-        <h3>What should happen?</h3>
+        <p className="eyebrow">Before you launch</p>
+        <h3>Room setup summary</h3>
         <dl className="create-debug-list">
           <div>
             <dt>Selected category</dt>
@@ -285,16 +285,13 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
           </div>
         </dl>
         <p>
-          A successful submit creates a room owned by the signed-in host, sets it live
-          immediately, and routes you into `/room?roomId=...`.
+          A successful public room opens immediately and routes you into the watch space.
         </p>
         <p>
-          Public rooms open immediately after creation. Private rooms pause here first so
-          you can copy the invite link before entering.
+          Private rooms pause here first so you can copy the invite link before entering.
         </p>
         <p>
-          If the host closes or leaves the room, backend state flips to ended immediately
-          and the public room list stops returning it.
+          Host controls, chat, reports, and moderation stay connected to this room record.
         </p>
       </aside>
     </section>

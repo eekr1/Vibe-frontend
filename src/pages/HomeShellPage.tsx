@@ -6,24 +6,27 @@ export function HomeShellPage() {
   return (
     <section className="shell-grid">
       <article className="surface-panel primary-panel">
-        <p className="eyebrow">App boot</p>
-        <h2>Frontend routing, layout, and global state surfaces are ready.</h2>
+        <p className="eyebrow">Watch together</p>
+        <h2>Host a room, invite people in, and keep the whole session in sync.</h2>
         <p>
-          This shell is now prepared for Wave 3 auth screens and later room-centered product
-          surfaces.
+          Vibehall is built around shared YouTube rooms: one host controls the timeline,
+          participants chat live, and moderation/reporting stays traceable.
         </p>
       </article>
       <article className="surface-panel">
-        <p className="eyebrow">API target</p>
-        <h2>{import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000/api"}</h2>
+        <p className="eyebrow">Discover</p>
+        <h2>Find public rooms that are live right now.</h2>
+        <p>Browse before logging in, then sign in only when you are ready to join or host.</p>
       </article>
       <article className="surface-panel">
-        <p className="eyebrow">Realtime target</p>
-        <h2>{import.meta.env.VITE_WS_URL ?? "http://localhost:4000/realtime"}</h2>
+        <p className="eyebrow">Private rooms</p>
+        <h2>Share a direct invite link for smaller sessions.</h2>
+        <p>Private rooms stay out of Discover and require the room password after login.</p>
       </article>
       <article className="surface-panel">
         <p className="eyebrow">Session</p>
         <h2>{currentUser ? currentUser.displayName : "Guest browsing"}</h2>
+        <p>{currentUser ? "You are ready to create or join rooms." : "You can explore public rooms before joining."}</p>
       </article>
     </section>
   );

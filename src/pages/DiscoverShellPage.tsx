@@ -137,8 +137,8 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
         <p className="eyebrow">Discover</p>
         <h2>Browse live public rooms.</h2>
         <p>
-          Guests can browse freely. Clicking a room keeps the room intent and lets the
-          room page handle login only when entry is needed.
+          Browse freely before logging in. When you choose a room, Vibehall keeps your intent
+          and asks for login only when entry is needed.
         </p>
 
         <div className="discover-controls">
@@ -185,10 +185,16 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
         {isLoading ? (
           <div className="inline-loading">
             <span className="loader" />
-            Loading public rooms
+            Finding live public rooms
           </div>
         ) : error ? (
-          <p className="form-error">{error}</p>
+          <div className="empty-state danger">
+            <h3>Public rooms could not be loaded.</h3>
+            <p className="form-error">{error}</p>
+            <button className="secondary-action" onClick={() => window.location.reload()} type="button">
+              Reload Discover
+            </button>
+          </div>
         ) : rooms.length > 0 ? (
           <>
             <div className="room-card-grid">
@@ -235,7 +241,7 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
         ) : (
           <div className="empty-state">
             <h3>No matching public rooms are live yet.</h3>
-            <p>Try another search/filter or create the room people will discover first.</p>
+            <p>Try a wider search, clear the category filter, or create the room people will discover first.</p>
             <button className="primary-action" onClick={() => onNavigate("/create-room")} type="button">
               Create room
             </button>

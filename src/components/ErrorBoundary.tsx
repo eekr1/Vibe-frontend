@@ -28,9 +28,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (this.state.error) {
       return (
         <main className="error-screen">
-          <p className="eyebrow">Runtime error</p>
-          <h1>Vibehall shell needs attention.</h1>
-          <p>{this.state.error.message}</p>
+          <p className="eyebrow">Something broke</p>
+          <h1>Vibehall hit a client-side error.</h1>
+          <p>
+            Refresh the page once. If it happens again, keep the current route and console message
+            for debugging.
+          </p>
+          <p className="form-error">{this.state.error.message}</p>
         </main>
       );
     }

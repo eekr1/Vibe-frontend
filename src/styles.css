@@ -411,10 +411,14 @@ button {
 
 .inline-loading {
   align-items: center;
+  background: rgba(13, 15, 16, 0.42);
+  border: 1px solid var(--line);
+  border-radius: 8px;
   color: var(--muted);
   display: inline-flex;
   gap: 0.8rem;
   margin-top: 1rem;
+  padding: 0.8rem 0.95rem;
 }
 
 .empty-state {
@@ -423,6 +427,20 @@ button {
   border-radius: 8px;
   margin-top: 1rem;
   padding: 1rem;
+}
+
+.empty-state p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.empty-state.danger {
+  background: rgba(226, 81, 67, 0.1);
+  border-color: rgba(226, 81, 67, 0.36);
+}
+
+.empty-state.danger h3 {
+  color: #ffd5d0;
 }
 
 .discover-layout {
