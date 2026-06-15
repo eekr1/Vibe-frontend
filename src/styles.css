@@ -746,6 +746,11 @@ button {
   justify-content: flex-end;
 }
 
+.admin-toolbar-actions small {
+  color: var(--muted);
+  max-width: 15rem;
+}
+
 .admin-toolbar-actions input,
 .admin-category-form input,
 .admin-edit-panel input,
@@ -802,6 +807,10 @@ button {
   padding: 0.8rem;
 }
 
+.admin-card > .admin-row {
+  order: 2;
+}
+
 .admin-row > div:first-child {
   display: grid;
   gap: 0.25rem;
@@ -848,6 +857,10 @@ button {
   display: grid;
   gap: 1rem;
   padding: 1rem;
+}
+
+.admin-card > .admin-detail-panel {
+  order: 1;
 }
 
 .admin-detail-header {

@@ -510,6 +510,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
               placeholder="Search current admin data..."
               value={searchTerm}
             />
+            <small>Filters loaded rows as you type. Pressing Enter is not required.</small>
             <button className="secondary-action compact" disabled={isLoading} onClick={() => void loadAdminData()} type="button">
               {isLoading ? "Refreshing..." : "Refresh"}
             </button>
