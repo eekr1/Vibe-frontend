@@ -377,7 +377,9 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
     return (
       includesSearch(user.displayName, search) ||
       includesSearch(user.email, search) ||
-      includesSearch(user.username, search)
+      includesSearch(user.username, search) ||
+      includesSearch(user.role, search) ||
+      includesSearch(user.accountState, search)
     );
   });
   const visibleRooms = rooms.filter((room) => {
@@ -385,7 +387,13 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
       return true;
     }
 
-    return includesSearch(room.title, search) || includesSearch(room.host.displayName, search);
+    return (
+      includesSearch(room.title, search) ||
+      includesSearch(room.host.displayName, search) ||
+      includesSearch(room.category.name, search) ||
+      includesSearch(room.state, search) ||
+      includesSearch(room.visibility, search)
+    );
   });
   const visibleReports = reports
     .filter((report) => {
@@ -404,7 +412,10 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
       return (
         includesSearch(report.reason, search) ||
         includesSearch(report.reporter.displayName, search) ||
+        includesSearch(report.status, search) ||
+        includesSearch(report.targetType, search) ||
         includesSearch(report.targetId, search) ||
+        Boolean(report.message?.body && includesSearch(report.message.body, search)) ||
         Boolean(report.room?.title && includesSearch(report.room.title, search)) ||
         Boolean(report.targetUser?.displayName && includesSearch(report.targetUser.displayName, search))
       );
@@ -439,6 +450,30 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
 
     return includesSearch(category.name, search) || includesSearch(category.slug, search);
   });
+  const visibleOverviewReports = overview?.recent.reports.filter((report) => {
+    if (!search) {
+      return true;
+    }
+
+    return (
+      includesSearch(report.reason, search) ||
+      includesSearch(report.status, search) ||
+      includesSearch(report.targetType, search) ||
+      includesSearch(report.reporter.displayName, search)
+    );
+  }) ?? [];
+  const visibleOverviewRooms = overview?.recent.rooms.filter((room) => {
+    if (!search) {
+      return true;
+    }
+
+    return (
+      includesSearch(room.title, search) ||
+      includesSearch(room.state, search) ||
+      includesSearch(room.host.displayName, search) ||
+      includesSearch(room.category.name, search)
+    );
+  }) ?? [];
 
   if (!isCheckingSession && !currentUser) {
     return (
@@ -519,6 +554,13 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
 
         {error ? <p className="form-error">{error}</p> : null}
         {success ? <p className="state-banner success">{success}</p> : null}
+        {search ? (
+          <p className="state-banner">
+            Filtering loaded admin data for "{search}". Overview results: {visibleOverviewReports.length} reports,{" "}
+            {visibleOverviewRooms.length} rooms. Section results: {visibleUsers.length} users, {visibleRooms.length} rooms,{" "}
+            {visibleReports.length} reports, {visibleModerationActions.length} actions, {visibleCategories.length} categories.
+          </p>
+        ) : null}
 
         {activeSection === "overview" && overview ? (
           <div className="admin-section-grid">
@@ -549,7 +591,8 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
           <div className="admin-list-grid">
             <article className="admin-card">
               <h3>Recent reports</h3>
-              {overview.recent.reports.map((report) => (
+              {visibleOverviewReports.length === 0 ? <p>No recent reports match the current search.</p> : null}
+              {visibleOverviewReports.map((report) => (
                 <div className="admin-row" key={report.id}>
                   <div>
                     <strong>{report.reason}</strong>
@@ -571,7 +614,8 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
             </article>
             <article className="admin-card">
               <h3>Recent rooms</h3>
-              {overview.recent.rooms.map((room) => (
+              {visibleOverviewRooms.length === 0 ? <p>No recent rooms match the current search.</p> : null}
+              {visibleOverviewRooms.map((room) => (
                 <div className="admin-row" key={room.id}>
                   <div>
                     <strong>{room.title}</strong>
