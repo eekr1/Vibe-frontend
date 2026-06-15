@@ -149,6 +149,47 @@ export type AdminOverview = {
   };
 };
 
+export type AdminUserDetail = {
+  history: {
+    hostedRooms: AdminRoom[];
+    moderationActionsReceived: AdminModerationAction[];
+    reportsMade: AdminReport[];
+    reportsReceived: AdminReport[];
+  };
+  user: AdminUser;
+};
+
+export type AdminRoomDetail = {
+  history: {
+    messages: Array<{
+      author: AdminUserSummary;
+      body: string;
+      createdAt: string;
+      id: string;
+      state: string;
+    }>;
+    moderationActions: AdminModerationAction[];
+    participants: Array<{
+      joinedAt: string;
+      leftAt: string | null;
+      role: "host" | "participant";
+      state: "active" | "banned" | "kicked" | "left";
+      user: AdminUserSummary;
+    }>;
+    reports: AdminReport[];
+  };
+  room: AdminRoom;
+};
+
+export type AdminReportDetail = {
+  context: {
+    relatedModerationActions: AdminModerationAction[];
+    relatedReports: AdminReport[];
+    relatedRoomReports: AdminReport[];
+  };
+  report: AdminReport;
+};
+
 export type AdminListResponse<TItem, TFilters = Record<string, unknown>> = {
   filters: TFilters;
   [key: string]: TFilters | TItem[];
@@ -188,6 +229,10 @@ export function updateAdminUserRestriction(userId: string, accountState: AdminAc
   });
 }
 
+export function getAdminUserDetail(userId: string) {
+  return apiRequest<AdminUserDetail>(`/admin/users/${userId}`);
+}
+
 export function listAdminRooms(filters: {
   search?: string;
   state?: AdminRoomState;
@@ -196,6 +241,10 @@ export function listAdminRooms(filters: {
   return apiRequest<{ filters: Record<string, string | null>; rooms: AdminRoom[] }>(
     `/admin/rooms${toQueryString(filters)}`
   );
+}
+
+export function getAdminRoomDetail(roomId: string) {
+  return apiRequest<AdminRoomDetail>(`/admin/rooms/${roomId}`);
 }
 
 export function listAdminReports(filters: {
@@ -213,6 +262,10 @@ export function reviewAdminReport(reportId: string, status: Exclude<AdminReportS
     body: { status },
     method: "PATCH"
   });
+}
+
+export function getAdminReportDetail(reportId: string) {
+  return apiRequest<AdminReportDetail>(`/admin/reports/${reportId}`);
 }
 
 export function listAdminModerationActions(filters: {

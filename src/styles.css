@@ -748,6 +748,8 @@ button {
 
 .admin-toolbar-actions input,
 .admin-category-form input,
+.admin-edit-panel input,
+.admin-filter-row select,
 .admin-row select {
   background: #0f1213;
   border: 1px solid var(--line);
@@ -820,8 +822,70 @@ button {
   justify-content: flex-end;
 }
 
+.admin-filter-row {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.admin-filter-row label {
+  color: var(--muted);
+  display: grid;
+  font-weight: 800;
+  gap: 0.35rem;
+}
+
 .admin-quote {
   color: var(--accent-soft);
+}
+
+.admin-detail-panel,
+.admin-edit-panel {
+  background: rgba(13, 15, 16, 0.62);
+  border: 1px solid rgba(226, 81, 67, 0.24);
+  border-radius: 8px;
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.admin-detail-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.admin-detail-header h3,
+.admin-detail-header p,
+.admin-detail-grid h4,
+.admin-detail-grid p {
+  margin: 0;
+}
+
+.admin-detail-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-detail-grid > div {
+  background: rgba(23, 26, 28, 0.72);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.8rem;
+}
+
+.admin-edit-panel {
+  grid-column: 1 / -1;
+}
+
+.admin-edit-panel label {
+  display: grid;
+  gap: 0.35rem;
 }
 
 .admin-category-form label {
@@ -1356,6 +1420,7 @@ button {
 
   .runtime-band,
   .admin-console,
+  .admin-detail-grid,
   .admin-list-grid,
   .admin-section-grid,
   .create-room-layout,
