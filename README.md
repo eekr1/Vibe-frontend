@@ -33,6 +33,35 @@ workspace at `../Roads/project-foundation/`, but they are not part of this Git
 repository and should not be required by CI or deployment.
 
 ## Current Wave Status
-Wave 9 adds the admin console with overview, users, rooms, reports, moderation history, categories management, admin access feedback, and debug visibility.
+Wave 15 adds production discipline around Render settings, environment variables, static rewrites, smoke tests, and regression verification.
 
-The first full build wave sequence is complete. Release readiness now depends on deploy environment configuration and manual regression verification.
+The first full build wave sequence and post-wave MVP stabilization waves are complete. Production readiness now depends on controlled deployment, backend migration readiness, admin verification, and manual regression verification.
+
+## Environment Variables
+Required in production:
+- `VITE_API_BASE_URL=https://your-backend.onrender.com/api`
+- `VITE_WS_URL=https://your-backend.onrender.com/realtime`
+
+Local defaults are documented in `.env.example`.
+
+## Render Static Site Settings
+Recommended frontend Render settings:
+- Root Directory: `Vibe frontend`
+- Build Command: `npm install && npm run build`
+- Publish Directory: `dist`
+- Environment: set `VITE_API_BASE_URL` and `VITE_WS_URL`
+
+Static rewrite requirement:
+- Add a rewrite rule from `/*` to `/index.html`.
+- This keeps direct refreshes on `/auth`, `/admin`, `/room/:slug`, `/profile`, and other client-side routes from returning Render's static `Not Found`.
+
+## Verification Commands
+Use `npm.cmd` on Windows PowerShell if `npm.ps1` is blocked.
+
+- `npm.cmd run typecheck`
+- `npm.cmd run build`
+
+After deploy, verify:
+- Home loads.
+- `/auth`, `/admin`, `/profile`, and a room URL do not 404 on refresh.
+- Browser console has no CORS/session/realtime errors during the smoke test.

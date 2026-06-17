@@ -7,6 +7,9 @@ export type AdminRoomVisibility = "private" | "public";
 export type AdminReportStatus = "action_taken" | "dismissed" | "escalated" | "open" | "reviewed";
 export type AdminReportTargetType = "message" | "room" | "user";
 export type AdminModerationActionType = "ban" | "kick";
+export type AdminPlatformContentPageKey = "community-guidelines" | "privacy" | "support" | "terms";
+export type AdminPlatformContentStatus = "draft" | "published";
+export type AdminPlatformContentAuditAction = "draft_saved" | "published" | "unpublished";
 
 export type AdminUserSummary = {
   avatarUrl: string | null;
@@ -113,6 +116,35 @@ export type AdminCategory = {
   slug: string;
   sortOrder: number;
   updatedAt: string;
+};
+
+export type AdminPlatformContent = {
+  createdAt: string;
+  draftBody: string;
+  draftUpdatedAt: string | null;
+  id: string;
+  lastEditor: AdminUserSummary | null;
+  lastPublisher: AdminUserSummary | null;
+  pageKey: AdminPlatformContentPageKey;
+  publishedAt: string | null;
+  publishedBody: string | null;
+  publishedTitle: string | null;
+  status: AdminPlatformContentStatus;
+  title: string;
+  updatedAt: string;
+};
+
+export type AdminPlatformContentAudit = {
+  actionType: AdminPlatformContentAuditAction;
+  actor: AdminUserSummary;
+  createdAt: string;
+  id: string;
+  metadata: string | null;
+};
+
+export type AdminPlatformContentDetail = {
+  audits: AdminPlatformContentAudit[];
+  content: AdminPlatformContent;
 };
 
 export type AdminOverview = {
@@ -279,6 +311,33 @@ export function listAdminModerationActions(filters: {
 
 export function listAdminCategories() {
   return apiRequest<{ categories: AdminCategory[] }>("/admin/categories");
+}
+
+export function listAdminPlatformContent() {
+  return apiRequest<{ contents: AdminPlatformContent[] }>("/admin/platform-content");
+}
+
+export function getAdminPlatformContentDetail(pageKey: AdminPlatformContentPageKey) {
+  return apiRequest<AdminPlatformContentDetail>(`/admin/platform-content/${pageKey}`);
+}
+
+export function saveAdminPlatformContentDraft(
+  pageKey: AdminPlatformContentPageKey,
+  input: {
+    draftBody: string;
+    title: string;
+  }
+) {
+  return apiRequest<AdminPlatformContentDetail>(`/admin/platform-content/${pageKey}/draft`, {
+    body: input,
+    method: "PATCH"
+  });
+}
+
+export function publishAdminPlatformContent(pageKey: AdminPlatformContentPageKey) {
+  return apiRequest<AdminPlatformContentDetail>(`/admin/platform-content/${pageKey}/publish`, {
+    method: "POST"
+  });
 }
 
 export function createAdminCategory(input: {

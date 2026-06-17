@@ -15,7 +15,7 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <ErrorBoundary>
-      <Suspense fallback={<LoadingState label="Loading Vibehall shell" />}>
+      <Suspense fallback={<LoadingState label="Loading Vibehall" />}>
         <AuthProvider>
           <App />
         </AuthProvider>

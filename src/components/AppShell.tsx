@@ -56,17 +56,31 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
       <main className="main-surface">
         <section className="runtime-band">
           <div>
-            <p className="eyebrow">Wave 2 runtime foundation</p>
+            <p className="eyebrow">Vibehall Video</p>
             <h1>{activeRoute.title}</h1>
           </div>
           <div className="runtime-status" aria-label="Runtime status">
             <span className="status-dot" />
-            Frontend shell online
+            Live rooms ready
           </div>
         </section>
 
         <Page onNavigate={onNavigate} />
       </main>
+      <footer className="trust-footer" aria-label="Platform trust links">
+        <button type="button" onClick={() => onNavigate("/terms")}>
+          Terms
+        </button>
+        <button type="button" onClick={() => onNavigate("/privacy")}>
+          Privacy
+        </button>
+        <button type="button" onClick={() => onNavigate("/community-guidelines")}>
+          Guidelines
+        </button>
+        <button type="button" onClick={() => onNavigate("/support")}>
+          Support
+        </button>
+      </footer>
     </div>
   );
 }

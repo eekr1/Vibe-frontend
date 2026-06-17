@@ -1,20 +1,27 @@
 import { type FormEvent, useEffect, useState } from "react";
 import {
   createAdminCategory,
+  getAdminPlatformContentDetail,
   getAdminOverview,
   getAdminReportDetail,
   getAdminRoomDetail,
   getAdminUserDetail,
   listAdminCategories,
   listAdminModerationActions,
+  listAdminPlatformContent,
   listAdminReports,
   listAdminRooms,
   listAdminUsers,
+  publishAdminPlatformContent,
   reviewAdminReport,
+  saveAdminPlatformContentDraft,
   updateAdminCategory,
   updateAdminUserRestriction,
   type AdminAccountState,
   type AdminCategory,
+  type AdminPlatformContent,
+  type AdminPlatformContentDetail,
+  type AdminPlatformContentPageKey,
   type AdminReportDetail,
   type AdminModerationAction,
   type AdminOverview,
@@ -34,7 +41,7 @@ type AdminShellPageProps = {
   onNavigate: (path: string) => void;
 };
 
-type AdminSection = "categories" | "moderation" | "overview" | "reports" | "rooms" | "users";
+type AdminSection = "categories" | "content" | "moderation" | "overview" | "reports" | "rooms" | "users";
 
 const sections: Array<{ id: AdminSection; label: string }> = [
   { id: "overview", label: "Overview" },
@@ -42,7 +49,8 @@ const sections: Array<{ id: AdminSection; label: string }> = [
   { id: "rooms", label: "Rooms" },
   { id: "reports", label: "Reports" },
   { id: "moderation", label: "Moderation" },
-  { id: "categories", label: "Categories" }
+  { id: "categories", label: "Categories" },
+  { id: "content", label: "Platform Content" }
 ];
 
 const reportReviewStatuses: Array<Exclude<AdminReportStatus, "open">> = [
@@ -114,6 +122,9 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
   const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
   const [moderationActions, setModerationActions] = useState<AdminModerationAction[]>([]);
   const [overview, setOverview] = useState<AdminOverview | null>(null);
+  const [platformContents, setPlatformContents] = useState<AdminPlatformContent[]>([]);
+  const [contentDraftBody, setContentDraftBody] = useState("");
+  const [contentDraftTitle, setContentDraftTitle] = useState("");
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [reportStatusFilter, setReportStatusFilter] = useState<AdminReportStatus | "all">("all");
   const [reportTargetTypeFilter, setReportTargetTypeFilter] = useState<AdminReportTargetType | "all">("all");
@@ -121,6 +132,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedReportDetail, setSelectedReportDetail] = useState<AdminReportDetail | null>(null);
   const [selectedRoomDetail, setSelectedRoomDetail] = useState<AdminRoomDetail | null>(null);
+  const [selectedContentDetail, setSelectedContentDetail] = useState<AdminPlatformContentDetail | null>(null);
   const [selectedUserDetail, setSelectedUserDetail] = useState<AdminUserDetail | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -132,14 +144,15 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
     setIsLoading(true);
 
     try {
-      const [nextOverview, nextUsers, nextRooms, nextReports, nextModerationActions, nextCategories] =
+      const [nextOverview, nextUsers, nextRooms, nextReports, nextModerationActions, nextCategories, nextContents] =
         await Promise.all([
           getAdminOverview(),
           listAdminUsers(),
           listAdminRooms(),
           listAdminReports(),
           listAdminModerationActions(),
-          listAdminCategories()
+          listAdminCategories(),
+          listAdminPlatformContent()
         ]);
 
       setOverview(nextOverview);
@@ -148,6 +161,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
       setReports(nextReports.reports);
       setModerationActions(nextModerationActions.actions);
       setCategories(nextCategories.categories);
+      setPlatformContents(nextContents.contents);
       setLastLoadedAt(new Date().toISOString());
     } catch (caughtError) {
       setError(describeAdminError(caughtError, "Admin data could not be loaded."));
@@ -202,6 +216,23 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
       setActiveSection("reports");
     } catch (caughtError) {
       setError(describeAdminError(caughtError, "Report detail could not be loaded."));
+    } finally {
+      setIsLoadingDetail(null);
+    }
+  }
+
+  async function handleInspectContent(pageKey: AdminPlatformContentPageKey) {
+    setError(null);
+    setIsLoadingDetail(`content:${pageKey}`);
+
+    try {
+      const detail = await getAdminPlatformContentDetail(pageKey);
+      setSelectedContentDetail(detail);
+      setContentDraftTitle(detail.content.title);
+      setContentDraftBody(detail.content.draftBody);
+      setActiveSection("content");
+    } catch (caughtError) {
+      setError(describeAdminError(caughtError, "Platform content detail could not be loaded."));
     } finally {
       setIsLoadingDetail(null);
     }
@@ -369,6 +400,61 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
     }
   }
 
+  async function handleSaveContentDraft(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!selectedContentDetail) {
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+    setIsMutating(`content:${selectedContentDetail.content.pageKey}:draft`);
+
+    try {
+      const detail = await saveAdminPlatformContentDraft(selectedContentDetail.content.pageKey, {
+        draftBody: contentDraftBody,
+        title: contentDraftTitle
+      });
+      setSelectedContentDetail(detail);
+      setPlatformContents((currentContents) =>
+        currentContents.map((content) =>
+          content.pageKey === detail.content.pageKey ? detail.content : content
+        )
+      );
+      setSuccess(`${detail.content.title} draft saved. Public page is unchanged until you publish.`);
+    } catch (caughtError) {
+      setError(describeAdminError(caughtError, "Platform content draft could not be saved."));
+    } finally {
+      setIsMutating(null);
+    }
+  }
+
+  async function handlePublishContent(pageKey: AdminPlatformContentPageKey) {
+    if (!window.confirm("Publish this draft to the public page? Visitors will see the published version immediately.")) {
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+    setIsMutating(`content:${pageKey}:publish`);
+
+    try {
+      const detail = await publishAdminPlatformContent(pageKey);
+      setSelectedContentDetail(detail);
+      setPlatformContents((currentContents) =>
+        currentContents.map((content) =>
+          content.pageKey === detail.content.pageKey ? detail.content : content
+        )
+      );
+      setSuccess(`${detail.content.title} published.`);
+    } catch (caughtError) {
+      setError(describeAdminError(caughtError, "Platform content could not be published."));
+    } finally {
+      setIsMutating(null);
+    }
+  }
+
   const visibleUsers = users.filter((user) => {
     if (!search) {
       return true;
@@ -450,6 +536,17 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
 
     return includesSearch(category.name, search) || includesSearch(category.slug, search);
   });
+  const visiblePlatformContents = platformContents.filter((content) => {
+    if (!search) {
+      return true;
+    }
+
+    return (
+      includesSearch(content.title, search) ||
+      includesSearch(content.pageKey, search) ||
+      includesSearch(content.status, search)
+    );
+  });
   const visibleOverviewReports = overview?.recent.reports.filter((report) => {
     if (!search) {
       return true;
@@ -529,6 +626,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
           <span>Rooms: {rooms.length}</span>
           <span>Reports: {reports.length}</span>
           <span>Actions: {moderationActions.length}</span>
+          <span>Content: {platformContents.length}</span>
         </div>
       </aside>
 
@@ -554,11 +652,12 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
 
         {error ? <p className="form-error">{error}</p> : null}
         {success ? <p className="state-banner success">{success}</p> : null}
-        {search ? (
+            {search ? (
           <p className="state-banner">
             Filtering loaded admin data for "{search}". Overview results: {visibleOverviewReports.length} reports,{" "}
             {visibleOverviewRooms.length} rooms. Section results: {visibleUsers.length} users, {visibleRooms.length} rooms,{" "}
-            {visibleReports.length} reports, {visibleModerationActions.length} actions, {visibleCategories.length} categories.
+            {visibleReports.length} reports, {visibleModerationActions.length} actions, {visibleCategories.length} categories,{" "}
+            {visiblePlatformContents.length} content pages.
           </p>
         ) : null}
 
@@ -952,6 +1051,127 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                 <small>{formatDate(action.createdAt)}</small>
               </div>
             ))}
+          </div>
+        ) : null}
+
+        {activeSection === "content" ? (
+          <div className="admin-list-grid">
+            <article className="admin-card">
+              <h3>Platform Content</h3>
+              <p>
+                Manage the public trust pages from here. Saving a draft does not change the public page; publishing does.
+              </p>
+              {visiblePlatformContents.length === 0 ? <p>No content pages match the current search.</p> : null}
+              {visiblePlatformContents.map((content) => (
+                <div className="admin-row" key={content.pageKey}>
+                  <div>
+                    <strong>{content.title}</strong>
+                    <span>
+                      {content.pageKey} | {content.status} | published {formatDate(content.publishedAt)}
+                    </span>
+                    <small>
+                      Last editor {content.lastEditor?.displayName ?? "not set"} | last publisher{" "}
+                      {content.lastPublisher?.displayName ?? "not set"}
+                    </small>
+                  </div>
+                  <div className="admin-action-stack">
+                    <button
+                      className="secondary-action compact"
+                      disabled={isLoadingDetail === `content:${content.pageKey}`}
+                      onClick={() => void handleInspectContent(content.pageKey)}
+                      type="button"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="primary-action compact"
+                      disabled={isMutating === `content:${content.pageKey}:publish`}
+                      onClick={() => void handlePublishContent(content.pageKey)}
+                      type="button"
+                    >
+                      Publish draft
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </article>
+
+            {selectedContentDetail ? (
+              <article className="admin-card">
+                <div className="admin-detail-header">
+                  <div>
+                    <p className="eyebrow">Content editor</p>
+                    <h3>{selectedContentDetail.content.title}</h3>
+                    <p>
+                      Draft updated {formatDate(selectedContentDetail.content.draftUpdatedAt)} | Published{" "}
+                      {formatDate(selectedContentDetail.content.publishedAt)}
+                    </p>
+                  </div>
+                  <button className="secondary-action compact" onClick={() => setSelectedContentDetail(null)} type="button">
+                    Close editor
+                  </button>
+                </div>
+
+                <form className="admin-edit-panel" onSubmit={handleSaveContentDraft}>
+                  <label>
+                    Title
+                    <input
+                      onChange={(event) => setContentDraftTitle(event.target.value)}
+                      required
+                      value={contentDraftTitle}
+                    />
+                  </label>
+                  <label>
+                    Draft body
+                    <textarea
+                      onChange={(event) => setContentDraftBody(event.target.value)}
+                      required
+                      rows={10}
+                      value={contentDraftBody}
+                    />
+                  </label>
+                  <div className="admin-action-stack horizontal-actions">
+                    <button
+                      className="secondary-action compact"
+                      disabled={isMutating === `content:${selectedContentDetail.content.pageKey}:draft`}
+                      type="submit"
+                    >
+                      Save draft
+                    </button>
+                    <button
+                      className="primary-action compact"
+                      disabled={isMutating === `content:${selectedContentDetail.content.pageKey}:publish`}
+                      onClick={() => void handlePublishContent(selectedContentDetail.content.pageKey)}
+                      type="button"
+                    >
+                      Publish draft
+                    </button>
+                  </div>
+                </form>
+
+                <div className="admin-detail-grid">
+                  <div>
+                    <h4>Published version</h4>
+                    <p>{selectedContentDetail.content.publishedTitle ?? "Not published yet"}</p>
+                    <p className="admin-quote">
+                      {selectedContentDetail.content.publishedBody ?? "The public page will use fallback copy until this content is published."}
+                    </p>
+                  </div>
+                  <div>
+                    <h4>Audit history</h4>
+                    {selectedContentDetail.audits.length > 0 ? (
+                      selectedContentDetail.audits.map((audit) => (
+                        <p key={audit.id}>
+                          {audit.actionType} by {audit.actor.displayName} | {formatDate(audit.createdAt)}
+                        </p>
+                      ))
+                    ) : (
+                      <p>No audit events yet.</p>
+                    )}
+                  </div>
+                </div>
+              </article>
+            ) : null}
           </div>
         ) : null}
 

@@ -4,6 +4,12 @@ import { AuthPage } from "../pages/AuthPage";
 import { CreateRoomPage } from "../pages/CreateRoomPage";
 import { DiscoverShellPage } from "../pages/DiscoverShellPage";
 import { HomeShellPage } from "../pages/HomeShellPage";
+import {
+  CommunityGuidelinesPage,
+  PrivacyPage,
+  SupportPage,
+  TermsPage
+} from "../pages/PlatformContentPage";
 import { ProfileSettingsPage } from "../pages/ProfileSettingsPage";
 import { RoomShellPage } from "../pages/RoomShellPage";
 
@@ -20,13 +26,13 @@ export const routes: RouteDefinition[] = [
     component: HomeShellPage,
     label: "Home",
     path: "/",
-    title: "A calm live video room foundation"
+    title: "Live rooms for shared YouTube moments"
   },
   {
     component: DiscoverShellPage,
     label: "Discover",
     path: "/discover",
-    title: "Discover shell"
+    title: "Discover live rooms"
   },
   {
     component: CreateRoomPage,
@@ -38,14 +44,14 @@ export const routes: RouteDefinition[] = [
     component: RoomShellPage,
     label: "Room",
     path: "/room",
-    title: "Room shell"
+    title: "Live room"
   },
   {
     component: AuthPage,
     label: "Auth",
     path: "/auth",
     showInPrimaryNav: false,
-    title: "Auth shell"
+    title: "Log in or sign up"
   },
   {
     component: ProfileSettingsPage,
@@ -58,6 +64,34 @@ export const routes: RouteDefinition[] = [
     label: "Admin",
     path: "/admin",
     showInPrimaryNav: false,
-    title: "Admin shell"
+    title: "Admin control center"
+  },
+  {
+    component: TermsPage,
+    label: "Terms",
+    path: "/terms",
+    showInPrimaryNav: false,
+    title: "Terms of Service"
+  },
+  {
+    component: PrivacyPage,
+    label: "Privacy",
+    path: "/privacy",
+    showInPrimaryNav: false,
+    title: "Privacy Policy"
+  },
+  {
+    component: CommunityGuidelinesPage,
+    label: "Guidelines",
+    path: "/community-guidelines",
+    showInPrimaryNav: false,
+    title: "Community Guidelines"
+  },
+  {
+    component: SupportPage,
+    label: "Support",
+    path: "/support",
+    showInPrimaryNav: false,
+    title: "Support"
   }
 ];
