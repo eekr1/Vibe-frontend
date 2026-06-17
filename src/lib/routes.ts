@@ -54,6 +54,13 @@ export const routes: RouteDefinition[] = [
     title: "Log in or sign up"
   },
   {
+    component: AuthPage,
+    label: "Reset password",
+    path: "/auth/reset",
+    showInPrimaryNav: false,
+    title: "Reset your password"
+  },
+  {
     component: ProfileSettingsPage,
     label: "Profile",
     path: "/profile",

@@ -363,6 +363,16 @@ button {
   padding: 0.75rem 0.85rem;
 }
 
+.form-success {
+  background: rgba(101, 194, 143, 0.12);
+  border: 1px solid rgba(101, 194, 143, 0.34);
+  border-radius: 6px;
+  color: #bdf1d2;
+  line-height: 1.5;
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.85rem;
+}
+
 .auth-gate {
   margin: 0 auto;
   max-width: 460px;
