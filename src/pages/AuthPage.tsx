@@ -68,6 +68,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
 
   const returnTo = useMemo(readReturnTo, []);
   const resetToken = useMemo(readResetToken, []);
+  const resetTokenMissing = mode === "reset" && !resetToken;
 
   function switchMode(nextMode: AuthMode) {
     setError(null);
@@ -221,7 +222,11 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
           </label>
         ) : null}
 
-        {mode !== "forgot" ? (
+        {resetTokenMissing ? (
+          <p className="form-error">This reset link is missing its token. Please request a new password reset link.</p>
+        ) : null}
+
+        {mode !== "forgot" && !resetTokenMissing ? (
           <label>
             {mode === "reset" ? "New password" : "Password"}
             <input
@@ -235,7 +240,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
           </label>
         ) : null}
 
-        {mode === "reset" ? (
+        {mode === "reset" && !resetTokenMissing ? (
           <label>
             Confirm new password
             <input
@@ -252,7 +257,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
         {successMessage ? <p className="form-success">{successMessage}</p> : null}
         {error ? <p className="form-error">{error}</p> : null}
 
-        <button className="primary-action full-width" disabled={isSubmitting} type="submit">
+        <button className="primary-action full-width" disabled={isSubmitting || resetTokenMissing} type="submit">
           {isSubmitting
             ? "Working..."
             : mode === "login"
