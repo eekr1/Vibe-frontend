@@ -816,6 +816,7 @@ button {
 .admin-category-form input,
 .admin-edit-panel input,
 .admin-edit-panel textarea,
+.admin-detail-grid textarea,
 .admin-filter-row select,
 .admin-row select {
   background: #0f1213;
@@ -828,6 +829,11 @@ button {
 
 .admin-edit-panel textarea {
   min-height: 220px;
+  resize: vertical;
+}
+
+.admin-detail-grid textarea {
+  min-height: 120px;
   resize: vertical;
 }
 

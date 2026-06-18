@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useState } from "react";
 import {
+  applyAdminReportAction,
   createAdminCategory,
   getAdminPlatformContentDetail,
   getAdminOverview,
@@ -7,6 +8,7 @@ import {
   getAdminRoomDetail,
   getAdminUserDetail,
   listAdminCategories,
+  listAdminActionLogs,
   listAdminModerationActions,
   listAdminPlatformContent,
   listAdminReports,
@@ -18,6 +20,7 @@ import {
   updateAdminCategory,
   updateAdminUserRestriction,
   type AdminAccountState,
+  type AdminActionLog,
   type AdminCategory,
   type AdminPlatformContent,
   type AdminPlatformContentDetail,
@@ -26,6 +29,7 @@ import {
   type AdminModerationAction,
   type AdminOverview,
   type AdminReport,
+  type AdminReportAction,
   type AdminReportStatus,
   type AdminReportTargetType,
   type AdminRoom,
@@ -72,6 +76,17 @@ const reportStatusFilters: Array<AdminReportStatus | "all"> = [
 const reportTargetTypeFilters: Array<AdminReportTargetType | "all"> = ["all", "room", "user", "message"];
 
 const accountStates: AdminAccountState[] = ["active", "restricted", "suspended", "banned"];
+
+const reportActionLabels: Record<AdminReportAction, string> = {
+  ban_user: "Ban account",
+  delete_message: "Delete message",
+  delete_room: "Delete room",
+  end_room: "End room",
+  hide_message: "Hide message",
+  restore_user: "Restore account",
+  restrict_user: "Restrict account",
+  suspend_user: "Suspend account"
+};
 
 function describeAdminError(error: unknown, fallback: string) {
   if (error instanceof ApiClientError) {
@@ -120,6 +135,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isMutating, setIsMutating] = useState<string | null>(null);
   const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
+  const [adminActionLogs, setAdminActionLogs] = useState<AdminActionLog[]>([]);
   const [moderationActions, setModerationActions] = useState<AdminModerationAction[]>([]);
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [platformContents, setPlatformContents] = useState<AdminPlatformContent[]>([]);
@@ -128,6 +144,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [reportStatusFilter, setReportStatusFilter] = useState<AdminReportStatus | "all">("all");
   const [reportTargetTypeFilter, setReportTargetTypeFilter] = useState<AdminReportTargetType | "all">("all");
+  const [reportActionReason, setReportActionReason] = useState("");
   const [rooms, setRooms] = useState<AdminRoom[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedReportDetail, setSelectedReportDetail] = useState<AdminReportDetail | null>(null);
@@ -144,13 +161,23 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
     setIsLoading(true);
 
     try {
-      const [nextOverview, nextUsers, nextRooms, nextReports, nextModerationActions, nextCategories, nextContents] =
+      const [
+        nextOverview,
+        nextUsers,
+        nextRooms,
+        nextReports,
+        nextModerationActions,
+        nextAdminActionLogs,
+        nextCategories,
+        nextContents
+      ] =
         await Promise.all([
           getAdminOverview(),
           listAdminUsers(),
           listAdminRooms(),
           listAdminReports(),
           listAdminModerationActions(),
+          listAdminActionLogs(),
           listAdminCategories(),
           listAdminPlatformContent()
         ]);
@@ -160,6 +187,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
       setRooms(nextRooms.rooms);
       setReports(nextReports.reports);
       setModerationActions(nextModerationActions.actions);
+      setAdminActionLogs(nextAdminActionLogs.actions);
       setCategories(nextCategories.categories);
       setPlatformContents(nextContents.contents);
       setLastLoadedAt(new Date().toISOString());
@@ -213,6 +241,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
     try {
       const detail = await getAdminReportDetail(reportId);
       setSelectedReportDetail(detail);
+      setReportActionReason("");
       setActiveSection("reports");
     } catch (caughtError) {
       setError(describeAdminError(caughtError, "Report detail could not be loaded."));
@@ -258,6 +287,93 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
       setSuccess(`Report ${compactId(reportId)} marked as ${status}.`);
     } catch (caughtError) {
       setError(describeAdminError(caughtError, "Report review update failed."));
+    } finally {
+      setIsMutating(null);
+    }
+  }
+
+  function getReportActions(report: AdminReport): AdminReportAction[] {
+    const actions: AdminReportAction[] = [];
+
+    if (report.targetUser) {
+      actions.push("restrict_user", "suspend_user", "ban_user", "restore_user");
+    }
+
+    if (report.message) {
+      actions.push("hide_message", "delete_message");
+    }
+
+    if (report.room) {
+      actions.push("end_room", "delete_room");
+    }
+
+    return actions;
+  }
+
+  async function handleReportAction(report: AdminReport, action: AdminReportAction) {
+    const actionLabel = reportActionLabels[action];
+    const reason = reportActionReason.trim();
+
+    if (
+      !window.confirm(
+        `${actionLabel} from report ${compactId(report.id)}? This will change platform state, log an admin action, and mark the report as action_taken.`
+      )
+    ) {
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+    setIsMutating(`report:${report.id}:action:${action}`);
+
+    try {
+      const result = await applyAdminReportAction(report.id, {
+        action,
+        reason: reason || undefined
+      });
+
+      setReports((currentReports) =>
+        currentReports.map((nextReport) => (nextReport.id === result.report.id ? result.report : nextReport))
+      );
+      setAdminActionLogs((currentActions) => [result.action, ...currentActions]);
+      setSelectedReportDetail((currentDetail) =>
+        currentDetail?.report.id === result.report.id
+          ? {
+              context: {
+                ...currentDetail.context,
+                relatedAdminActions: [result.action, ...currentDetail.context.relatedAdminActions]
+              },
+              report: result.report
+            }
+          : currentDetail
+      );
+
+      if (result.user) {
+        const updatedUser = result.user;
+
+        setUsers((currentUsers) =>
+          currentUsers.map((nextUser) => (nextUser.id === updatedUser.id ? updatedUser : nextUser))
+        );
+        setSelectedUserDetail((currentDetail) =>
+          currentDetail?.user.id === updatedUser.id ? { ...currentDetail, user: updatedUser } : currentDetail
+        );
+      }
+
+      if (result.room) {
+        const updatedRoom = result.room;
+
+        setRooms((currentRooms) =>
+          currentRooms.map((nextRoom) => (nextRoom.id === updatedRoom.id ? updatedRoom : nextRoom))
+        );
+        setSelectedRoomDetail((currentDetail) =>
+          currentDetail?.room.id === updatedRoom.id ? { ...currentDetail, room: updatedRoom } : currentDetail
+        );
+      }
+
+      setReportActionReason("");
+      setSuccess(`${actionLabel} applied and logged for report ${compactId(report.id)}.`);
+    } catch (caughtError) {
+      setError(describeAdminError(caughtError, `${actionLabel} could not be applied.`));
     } finally {
       setIsMutating(null);
     }
@@ -529,6 +645,21 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
       includesSearch(action.room.title, search)
     );
   });
+
+  const visibleAdminActionLogs = adminActionLogs.filter((action) => {
+    if (!search) {
+      return true;
+    }
+
+    return (
+      includesSearch(action.actionType, search) ||
+      includesSearch(action.targetType, search) ||
+      includesSearch(action.targetId, search) ||
+      includesSearch(action.actor.displayName, search) ||
+      includesSearch(action.actor.username, search) ||
+      includesSearch(action.reason ?? "", search)
+    );
+  });
   const visibleCategories = categories.filter((category) => {
     if (!search) {
       return true;
@@ -625,7 +756,8 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
           <span>Users: {users.length}</span>
           <span>Rooms: {rooms.length}</span>
           <span>Reports: {reports.length}</span>
-          <span>Actions: {moderationActions.length}</span>
+          <span>Room actions: {moderationActions.length}</span>
+          <span>Admin actions: {adminActionLogs.length}</span>
           <span>Content: {platformContents.length}</span>
         </div>
       </aside>
@@ -656,8 +788,9 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
           <p className="state-banner">
             Filtering loaded admin data for "{search}". Overview results: {visibleOverviewReports.length} reports,{" "}
             {visibleOverviewRooms.length} rooms. Section results: {visibleUsers.length} users, {visibleRooms.length} rooms,{" "}
-            {visibleReports.length} reports, {visibleModerationActions.length} actions, {visibleCategories.length} categories,{" "}
-            {visiblePlatformContents.length} content pages.
+            {visibleReports.length} reports, {visibleModerationActions.length} room actions,{" "}
+            {visibleAdminActionLogs.length} admin actions, {visibleCategories.length} categories, {visiblePlatformContents.length}{" "}
+            content pages.
           </p>
         ) : null}
 
@@ -681,7 +814,12 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
             <article className="admin-stat-card">
               <span>Moderation</span>
               <strong>{overview.overview.moderation.totalActions}</strong>
-              <small>{overview.overview.categories.active} active categories</small>
+              <small>{overview.overview.adminActions.total} admin actions</small>
+            </article>
+            <article className="admin-stat-card">
+              <span>Categories</span>
+              <strong>{overview.overview.categories.active}</strong>
+              <small>active category records</small>
             </article>
           </div>
         ) : null}
@@ -1023,9 +1161,61 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                     <p>Same target reports: {selectedReportDetail.context.relatedReports.length}</p>
                     <p>Same room reports: {selectedReportDetail.context.relatedRoomReports.length}</p>
                     <p>Related moderation actions: {selectedReportDetail.context.relatedModerationActions.length}</p>
+                    <p>Related admin actions: {selectedReportDetail.context.relatedAdminActions.length}</p>
                     {selectedReportDetail.context.relatedModerationActions.slice(0, 4).map((action) => (
                       <p key={action.id}>{action.actionType} | {action.target.displayName} | {formatDate(action.createdAt)}</p>
                     ))}
+                  </div>
+                  <div>
+                    <h4>Take platform action</h4>
+                    <p>
+                      These actions change real platform state, create an admin action log, and mark the report as
+                      action_taken.
+                    </p>
+                    <label>
+                      Action reason
+                      <textarea
+                        maxLength={500}
+                        onChange={(event) => setReportActionReason(event.target.value)}
+                        placeholder="Short internal reason for this enforcement action..."
+                        rows={3}
+                        value={reportActionReason}
+                      />
+                    </label>
+                    <div className="admin-action-stack">
+                      {getReportActions(selectedReportDetail.report).length === 0 ? (
+                        <p>No direct action is available for this report target.</p>
+                      ) : (
+                        getReportActions(selectedReportDetail.report).map((action) => (
+                          <button
+                            className={
+                              action === "restore_user" || action === "end_room" || action === "hide_message"
+                                ? "secondary-action compact"
+                                : "danger-action compact"
+                            }
+                            disabled={isMutating === `report:${selectedReportDetail.report.id}:action:${action}`}
+                            key={action}
+                            onClick={() => void handleReportAction(selectedReportDetail.report, action)}
+                            type="button"
+                          >
+                            {reportActionLabels[action]}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <h4>Admin action history</h4>
+                    {selectedReportDetail.context.relatedAdminActions.length > 0 ? (
+                      selectedReportDetail.context.relatedAdminActions.slice(0, 6).map((action) => (
+                        <p key={action.id}>
+                          {action.actionType} | {action.targetType} {compactId(action.targetId)} |{" "}
+                          {action.actor.displayName} | {formatDate(action.createdAt)}
+                        </p>
+                      ))
+                    ) : (
+                      <p>No platform action logged for this report context yet.</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1034,23 +1224,44 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
         ) : null}
 
         {activeSection === "moderation" ? (
-          <div className="admin-card">
-            <h3>Moderation history</h3>
-            {visibleModerationActions.length === 0 ? <p>No moderation actions match the current search.</p> : null}
-            {visibleModerationActions.map((action) => (
-              <div className="admin-row" key={action.id}>
-                <div>
-                  <strong>{action.actionType}</strong>
-                  <span>
-                    {action.actor.displayName}
-                    {" -> "}
-                    {action.target.displayName} | {action.room.title} ({action.room.state})
-                  </span>
-                  <small>{action.reason ?? "No reason stored"}</small>
+          <div className="admin-list-grid">
+            <article className="admin-card">
+              <h3>Room moderation history</h3>
+              {visibleModerationActions.length === 0 ? <p>No room moderation actions match the current search.</p> : null}
+              {visibleModerationActions.map((action) => (
+                <div className="admin-row" key={action.id}>
+                  <div>
+                    <strong>{action.actionType}</strong>
+                    <span>
+                      {action.actor.displayName}
+                      {" -> "}
+                      {action.target.displayName} | {action.room.title} ({action.room.state})
+                    </span>
+                    <small>{action.reason ?? "No reason stored"}</small>
+                  </div>
+                  <small>{formatDate(action.createdAt)}</small>
                 </div>
-                <small>{formatDate(action.createdAt)}</small>
-              </div>
-            ))}
+              ))}
+            </article>
+            <article className="admin-card">
+              <h3>Platform admin action history</h3>
+              {visibleAdminActionLogs.length === 0 ? <p>No platform admin actions match the current search.</p> : null}
+              {visibleAdminActionLogs.map((action) => (
+                <div className="admin-row" key={action.id}>
+                  <div>
+                    <strong>{action.actionType}</strong>
+                    <span>
+                      {action.actor.displayName} | {action.targetType} {compactId(action.targetId)}
+                    </span>
+                    <small>
+                      {action.reason ?? "No reason stored"}
+                      {action.reportId ? ` | report ${compactId(action.reportId)}` : ""}
+                    </small>
+                  </div>
+                  <small>{formatDate(action.createdAt)}</small>
+                </div>
+              ))}
+            </article>
           </div>
         ) : null}
 

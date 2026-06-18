@@ -7,6 +7,25 @@ export type AdminRoomVisibility = "private" | "public";
 export type AdminReportStatus = "action_taken" | "dismissed" | "escalated" | "open" | "reviewed";
 export type AdminReportTargetType = "message" | "room" | "user";
 export type AdminModerationActionType = "ban" | "kick";
+export type AdminActionType =
+  | "account_banned"
+  | "account_restored"
+  | "account_restricted"
+  | "account_suspended"
+  | "message_deleted"
+  | "message_hidden"
+  | "room_deleted"
+  | "room_ended";
+export type AdminActionTargetType = "message" | "room" | "user";
+export type AdminReportAction =
+  | "ban_user"
+  | "delete_message"
+  | "delete_room"
+  | "end_room"
+  | "hide_message"
+  | "restore_user"
+  | "restrict_user"
+  | "suspend_user";
 export type AdminPlatformContentPageKey = "community-guidelines" | "privacy" | "support" | "terms";
 export type AdminPlatformContentStatus = "draft" | "published";
 export type AdminPlatformContentAuditAction = "draft_saved" | "published" | "unpublished";
@@ -107,6 +126,18 @@ export type AdminModerationAction = {
   targetUserId: string;
 };
 
+export type AdminActionLog = {
+  actionType: AdminActionType;
+  actor: AdminUserSummary;
+  createdAt: string;
+  id: string;
+  metadata: string | null;
+  reason: string | null;
+  reportId: string | null;
+  targetId: string;
+  targetType: AdminActionTargetType;
+};
+
 export type AdminCategory = {
   createdAt: string;
   id: string;
@@ -156,6 +187,9 @@ export type AdminOverview = {
     moderation: {
       totalActions: number;
     };
+    adminActions: {
+      total: number;
+    };
     reports: {
       open: number;
       total: number;
@@ -175,6 +209,7 @@ export type AdminOverview = {
     };
   };
   recent: {
+    adminActions: AdminActionLog[];
     moderationActions: AdminModerationAction[];
     reports: AdminReport[];
     rooms: AdminRoom[];
@@ -215,11 +250,26 @@ export type AdminRoomDetail = {
 
 export type AdminReportDetail = {
   context: {
+    relatedAdminActions: AdminActionLog[];
     relatedModerationActions: AdminModerationAction[];
     relatedReports: AdminReport[];
     relatedRoomReports: AdminReport[];
   };
   report: AdminReport;
+};
+
+export type AdminReportActionResult = {
+  action: AdminActionLog;
+  message?: {
+    author: AdminUserSummary;
+    body: string;
+    createdAt: string;
+    id: string;
+    state: string;
+  };
+  report: AdminReport;
+  room?: AdminRoom;
+  user?: AdminUser;
 };
 
 export type AdminListResponse<TItem, TFilters = Record<string, unknown>> = {
@@ -296,6 +346,19 @@ export function reviewAdminReport(reportId: string, status: Exclude<AdminReportS
   });
 }
 
+export function applyAdminReportAction(
+  reportId: string,
+  input: {
+    action: AdminReportAction;
+    reason?: string;
+  }
+) {
+  return apiRequest<AdminReportActionResult>(`/admin/reports/${reportId}/actions`, {
+    body: input,
+    method: "POST"
+  });
+}
+
 export function getAdminReportDetail(reportId: string) {
   return apiRequest<AdminReportDetail>(`/admin/reports/${reportId}`);
 }
@@ -306,6 +369,16 @@ export function listAdminModerationActions(filters: {
 } = {}) {
   return apiRequest<{ actions: AdminModerationAction[]; filters: Record<string, string | null> }>(
     `/admin/moderation-actions${toQueryString(filters)}`
+  );
+}
+
+export function listAdminActionLogs(filters: {
+  actionType?: AdminActionType;
+  search?: string;
+  targetType?: AdminActionTargetType;
+} = {}) {
+  return apiRequest<{ actions: AdminActionLog[]; filters: Record<string, string | null> }>(
+    `/admin/action-logs${toQueryString(filters)}`
   );
 }
 
