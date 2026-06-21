@@ -19,17 +19,17 @@ const fallbackCopy: Record<PlatformContentPageKey, { body: string; title: string
   },
   privacy: {
     body:
-      "This MVP privacy note explains that Vibehall stores account, room, chat, report, and moderation data needed to run the platform. A fuller legal policy should replace this draft before a broader public launch.",
+      "Vibehall stores the account, room, chat, report, and moderation data needed to run a safe shared watching platform. The public policy will continue to become more detailed as the service grows.",
     title: "Privacy Policy"
   },
   support: {
     body:
-      "Need help with Vibehall during the MVP stage? Contact the platform operator with the account, room, or report context that explains what happened.",
+      "Need help with Vibehall? Contact the platform operator with the account, room, or report context that explains what happened.",
     title: "Support"
   },
   terms: {
     body:
-      "These MVP terms explain the early Vibehall rules in plain language. Use the platform respectfully, do not abuse rooms or other members, and understand that the service is still evolving before a full public launch.",
+      "These terms explain the core Vibehall rules in plain language. Use the platform respectfully, do not abuse rooms or other members, and understand that the service will keep evolving as the community grows.",
     title: "Terms of Service"
   }
 };
@@ -97,17 +97,17 @@ export function PlatformContentPage({ eyebrow, pageKey }: PlatformContentPagePro
       {isLoading ? (
         <div className="inline-loading">
           <span className="loader" />
-          Loading published platform content
+          Loading platform content
         </div>
       ) : null}
       {error ? (
         <p className="state-banner">
-          Published content could not be reached right now, so Vibehall is showing the safe MVP fallback copy.
+          Published content could not be reached right now, so Vibehall is showing the current platform copy.
         </p>
       ) : null}
       <ContentBody body={pageBody} />
       <p className="content-meta">
-        {content?.publishedAt ? `Published ${new Date(content.publishedAt).toLocaleString()}` : "MVP fallback copy"}
+        {content?.publishedAt ? `Published ${new Date(content.publishedAt).toLocaleString()}` : "Current platform copy"}
       </p>
     </section>
   );

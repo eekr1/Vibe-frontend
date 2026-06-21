@@ -279,6 +279,27 @@ button {
   min-height: 18rem;
 }
 
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1.25rem;
+}
+
+.live-moment-panel {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.live-moment-list {
+  color: var(--muted);
+  display: grid;
+  gap: 0.6rem;
+  line-height: 1.55;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
 .wide-panel {
   min-height: 18rem;
 }
@@ -328,6 +349,13 @@ button {
   font-weight: 700;
   gap: 0.45rem;
   margin: 0 0 0.95rem;
+}
+
+.field-hint {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.45;
 }
 
 .auth-panel input,
@@ -521,14 +549,18 @@ button {
   outline: 2px solid rgba(242, 179, 125, 0.16);
 }
 
-.discover-debug {
+.discover-intro-actions {
+  margin-top: 1rem;
+}
+
+.discover-live-strip {
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
   margin-top: 0.85rem;
 }
 
-.discover-debug span,
+.discover-live-strip span,
 .room-card-meta span {
   background: rgba(242, 179, 125, 0.1);
   border: 1px solid rgba(242, 179, 125, 0.24);
@@ -707,6 +739,48 @@ button {
 .profile-settings-form {
   display: grid;
   gap: 1rem;
+}
+
+.profile-preview-card {
+  align-items: center;
+  background: rgba(13, 15, 16, 0.42);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  padding: 0.85rem;
+}
+
+.profile-preview-card img,
+.profile-avatar-fallback {
+  border-radius: 50%;
+  flex: 0 0 auto;
+  height: 3rem;
+  width: 3rem;
+}
+
+.profile-preview-card img {
+  object-fit: cover;
+}
+
+.profile-avatar-fallback {
+  align-items: center;
+  background: rgba(226, 81, 67, 0.2);
+  border: 1px solid rgba(226, 81, 67, 0.38);
+  color: var(--accent-soft);
+  display: inline-flex;
+  font-weight: 900;
+  justify-content: center;
+}
+
+.profile-preview-card div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.profile-preview-card span {
+  color: var(--muted);
 }
 
 .profile-settings-form input {

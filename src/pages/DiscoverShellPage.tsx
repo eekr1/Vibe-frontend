@@ -135,18 +135,26 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
     <section className="discover-layout">
       <div className="surface-panel wide-panel">
         <p className="eyebrow">Discover</p>
-        <h2>Browse live public rooms.</h2>
+        <h2>See what is live right now.</h2>
         <p>
-          Browse freely before logging in. When you choose a room, Vibehall keeps your intent
-          and asks for login only when entry is needed.
+          Browse open rooms, follow the energy, and enter the shared moment when something pulls you in.
+          Guests can look around freely; joining keeps identity and room safety clear.
         </p>
+        <div className="action-row discover-intro-actions">
+          <button className="primary-action compact" onClick={() => onNavigate("/create-room")} type="button">
+            Create a room
+          </button>
+          <button className="secondary-action compact" onClick={() => setSearch("")} type="button">
+            Clear search
+          </button>
+        </div>
 
         <div className="discover-controls">
           <label>
             Search
             <input
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search title, host, or category"
+              placeholder="Find a room, host, or category"
               type="search"
               value={search}
             />
@@ -176,23 +184,23 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
           </label>
         </div>
 
-        <div className="discover-debug">
+        <div className="discover-live-strip">
           <span>Live + public only</span>
-          <span>{rooms.length} visible</span>
+          <span>{rooms.length} rooms shown</span>
           <span>{sortOptions.find((option) => option.value === sort)?.label}</span>
         </div>
 
         {isLoading ? (
           <div className="inline-loading">
             <span className="loader" />
-            Finding live public rooms
+            Looking for live rooms
           </div>
         ) : error ? (
           <div className="empty-state danger">
-            <h3>Public rooms could not be loaded.</h3>
+            <h3>Discover could not refresh.</h3>
             <p className="form-error">{error}</p>
             <button className="secondary-action" onClick={() => window.location.reload()} type="button">
-              Reload Discover
+              Try again
             </button>
           </div>
         ) : rooms.length > 0 ? (
@@ -212,7 +220,7 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
                     </div>
                     <h3>{room.title}</h3>
                     <p>
-                      Hosted by {room.host.displayName} | {room.card?.capacityLabel ??
+                      {room.host.displayName} is hosting | {room.card?.capacityLabel ??
                         `${room.activeParticipantCount}/${room.participantLimit}`}
                     </p>
                     <button
@@ -220,7 +228,7 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
                       onClick={() => onNavigate(`/room?roomId=${room.id}`)}
                       type="button"
                     >
-                      Enter room
+                      Join live room
                     </button>
                   </div>
                 </article>
@@ -240,8 +248,8 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
           </>
         ) : (
           <div className="empty-state">
-            <h3>No matching public rooms are live yet.</h3>
-            <p>Try a wider search, clear the category filter, or create the room people will discover first.</p>
+            <h3>No live rooms match this view yet.</h3>
+            <p>Clear the filters, try a wider search, or open the room others will notice first.</p>
             <button className="primary-action" onClick={() => onNavigate("/create-room")} type="button">
               Create room
             </button>

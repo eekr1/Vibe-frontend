@@ -37,7 +37,7 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
         </nav>
         <div className="account-strip">
           {isCheckingSession ? (
-            <span className="account-chip">Checking session</span>
+            <span className="account-chip">Checking account</span>
           ) : currentUser ? (
             <>
               <span className="account-chip">{currentUser.displayName}</span>
@@ -59,7 +59,7 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
             <p className="eyebrow">Vibehall Video</p>
             <h1>{activeRoute.title}</h1>
           </div>
-          <div className="runtime-status" aria-label="Runtime status">
+          <div className="runtime-status" aria-label="Live platform status">
             <span className="status-dot" />
             Live rooms ready
           </div>

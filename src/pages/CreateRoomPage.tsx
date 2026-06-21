@@ -139,10 +139,10 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
     <section className="create-room-layout">
       <form className="room-form" onSubmit={handleSubmit}>
         <p className="eyebrow">Create room</p>
-        <h2>Start a host-owned live room.</h2>
+        <h2>Start a live room in a few clear steps.</h2>
         <p className="form-intro">
-          Paste a YouTube link, choose the room shape, and Vibehall will create a live
-          session owned by you.
+          Paste a YouTube link, give the moment a title, and choose whether the room
+          should be open to everyone or shared privately by link.
         </p>
 
         <label>
@@ -223,6 +223,9 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
         {visibility === "private" ? (
           <label>
             Private room password
+            <span className="field-hint">
+              People with the invite link will still need this password before they can enter.
+            </span>
             <input
               maxLength={80}
               minLength={4}
@@ -240,7 +243,10 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
           <div className="private-invite-card">
             <p className="eyebrow">Private room ready</p>
             <h3>{createdPrivateRoom.title}</h3>
-            <p>Share this link to invite someone. They still need to log in and enter the room password.</p>
+            <p>
+              Send this link to the people you want inside. The room stays hidden from
+              Discover, and guests still need the password you set.
+            </p>
             <input aria-label="Private room invite link" readOnly value={createdPrivateRoomUrl} />
             {inviteCopyStatus ? <p className="state-banner success">{inviteCopyStatus}</p> : null}
             <div className="action-row">
@@ -269,7 +275,7 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
 
       <aside className="create-room-aside">
         <p className="eyebrow">Before you launch</p>
-        <h3>Room setup summary</h3>
+        <h3>Your room at a glance</h3>
         <dl className="create-debug-list">
           <div>
             <dt>Selected category</dt>
@@ -285,13 +291,13 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
           </div>
         </dl>
         <p>
-          A successful public room opens immediately and routes you into the watch space.
+          Public rooms open immediately and can appear in Discover while they are live.
         </p>
         <p>
-          Private rooms pause here first so you can copy the invite link before entering.
+          Private rooms pause after creation so you can copy the invite link before entering.
         </p>
         <p>
-          Host controls, chat, reports, and moderation stay connected to this room record.
+          Host controls, chat, reports, and moderation all stay connected to this room.
         </p>
       </aside>
     </section>

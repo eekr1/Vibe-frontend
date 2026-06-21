@@ -25,6 +25,7 @@ export function ProfileSettingsPage({ onNavigate }: ProfileSettingsPageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const returnTo = `${window.location.pathname}${window.location.search}`;
+  const avatarInitial = (displayName.trim() || currentUser?.username || "V").slice(0, 1).toUpperCase();
 
   useEffect(() => {
     if (!currentUser) {
@@ -77,7 +78,7 @@ export function ProfileSettingsPage({ onNavigate }: ProfileSettingsPageProps) {
         displayName: displayName.trim()
       });
       await refreshCurrentUser();
-      setSuccess("Profile settings saved and session identity refreshed.");
+      setSuccess("Profile saved. Your room identity is up to date.");
     } catch (caughtError) {
       setError(describeProfileError(caughtError));
     } finally {
@@ -115,9 +116,20 @@ export function ProfileSettingsPage({ onNavigate }: ProfileSettingsPageProps) {
         <p className="eyebrow">Member continuity</p>
         <h2>Your profile</h2>
         <p>
-          Keep your room identity recognizable. These fields appear in rooms, chat,
-          reports, moderation context, and admin review screens.
+          Keep your room identity recognizable. Your display name and avatar are what
+          people notice first inside rooms; your username stays as your stable account handle.
         </p>
+        <div className="profile-preview-card">
+          {avatarUrl.trim() ? (
+            <img alt="" src={avatarUrl.trim()} />
+          ) : (
+            <span className="profile-avatar-fallback">{avatarInitial}</span>
+          )}
+          <div>
+            <strong>{displayName || currentUser.displayName}</strong>
+            <span>@{currentUser.username}</span>
+          </div>
+        </div>
         <dl className="room-facts">
           <div>
             <dt>Username</dt>
@@ -141,6 +153,7 @@ export function ProfileSettingsPage({ onNavigate }: ProfileSettingsPageProps) {
       <form className="surface-panel profile-settings-form" onSubmit={handleSubmit}>
         <label>
           Display name
+          <span className="field-hint">Shown in rooms, chat, reports, and moderation context.</span>
           <input
             maxLength={48}
             minLength={2}
@@ -151,6 +164,7 @@ export function ProfileSettingsPage({ onNavigate }: ProfileSettingsPageProps) {
         </label>
         <label>
           Avatar URL
+          <span className="field-hint">Optional image URL. Leave it blank to use your initial instead.</span>
           <input
             onChange={(event) => setAvatarUrl(event.target.value)}
             placeholder="https://example.com/avatar.png"

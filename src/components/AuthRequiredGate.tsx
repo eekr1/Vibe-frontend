@@ -6,10 +6,10 @@ type AuthRequiredGateProps = {
 };
 
 export function AuthRequiredGate({
-  body = "Log in or create an account so room access stays safe and traceable.",
+  body = "You can browse Vibehall as a guest, but entering rooms needs a member account so identity and safety stay clear.",
   onLogin,
   onSignup,
-  title = "Log in to continue into this room."
+  title = "Log in to enter this room."
 }: AuthRequiredGateProps) {
   return (
     <section className="auth-gate">

@@ -126,7 +126,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
       if (caughtError instanceof ApiClientError) {
         setError(caughtError.message);
       } else {
-        setError("Auth failed. Try again.");
+        setError("We could not complete this step. Please check the details and try again.");
       }
     } finally {
       setIsSubmitting(false);
@@ -156,12 +156,12 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
         </h2>
         <p className="form-intro">
           {mode === "forgot"
-            ? "Enter your account email. If it exists, we will send a reset link without exposing account status."
+            ? "Enter your account email. If it exists, we will send a private reset link without exposing account status."
             : mode === "reset"
               ? "Use the reset link from your email. The link is single-use and expires soon."
               : returnTo === "/"
-                ? "Your account keeps room ownership, chat identity, and moderation history traceable."
-                : "After this step, we will send you back to the room or admin flow you started."}
+                ? "Your account keeps room ownership, chat identity, reports, and moderation history connected to one clear member profile."
+                : "Finish this step and we will take you back to the room or action you started."}
         </p>
 
         {mode === "login" ? (
@@ -189,6 +189,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
             </label>
             <label>
               Username
+              <span className="field-hint">Your stable handle for login and account identity.</span>
               <input
                 autoComplete="username"
                 onChange={(event) => setUsername(event.target.value)}
@@ -200,6 +201,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
             </label>
             <label>
               Display name
+              <span className="field-hint">The name people see in rooms, chat, and reports.</span>
               <input
                 autoComplete="name"
                 onChange={(event) => setDisplayName(event.target.value)}
@@ -259,7 +261,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
 
         <button className="primary-action full-width" disabled={isSubmitting || resetTokenMissing} type="submit">
           {isSubmitting
-            ? "Working..."
+            ? "Please wait..."
             : mode === "login"
               ? "Log in"
               : mode === "signup"
