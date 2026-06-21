@@ -81,7 +81,7 @@ function describeAccessDenial(denialReason: null | string) {
   }
 
   if (denialReason === "ROOM_USER_BANNED") {
-    return "You are banned from rejoining this room.";
+    return "The host has blocked you from rejoining this room.";
   }
 
   if (denialReason?.startsWith("ACCOUNT_")) {
@@ -109,7 +109,7 @@ function describeApiError(error: unknown, fallback: string) {
   }
 
   if (error.code === "ROOM_USER_BANNED") {
-    return "You are banned from rejoining this room.";
+    return "The host has blocked you from rejoining this room.";
   }
 
   return error.message;
@@ -127,7 +127,7 @@ const reportReasonOptions: Array<{ label: string; value: ReportReason }> = [
 ];
 
 function describeModerationAction(actionType: ModerationActionType) {
-  return actionType === "ban" ? "banned from rejoining" : "removed from the room";
+  return actionType === "ban" ? "blocked from rejoining" : "removed from the room";
 }
 
 function formatMessageTime(value: string) {
@@ -148,6 +148,46 @@ function formatPlaybackTime(value: number) {
   }
 
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function describeSocketStatus(status: SocketStatus) {
+  if (status === "connected") {
+    return "Live sync connected";
+  }
+
+  if (status === "connecting") {
+    return "Connecting live sync";
+  }
+
+  if (status === "disconnected") {
+    return "Live sync reconnecting";
+  }
+
+  if (status === "error") {
+    return "Live sync needs attention";
+  }
+
+  return "Live sync idle";
+}
+
+function describeRoomState(state: Room["state"]) {
+  return state === "live" ? "Live session" : "Session ended";
+}
+
+function describeAccessState(state: AccessState) {
+  const labels: Record<AccessState, string> = {
+    banned: "Banned from this room",
+    blocked: "Access blocked",
+    checking: "Checking access",
+    ended: "Session ended",
+    full: "Room full",
+    joined: "Inside the room",
+    kicked: "Removed by host",
+    left: "You left",
+    password_required: "Password required"
+  };
+
+  return labels[state];
 }
 
 function clampPlaybackPosition(value: number, durationSeconds: number) {
@@ -448,7 +488,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
 
       const nextMessage =
         payload.actionType === "ban"
-          ? "You were banned from rejoining this room by the host."
+          ? "The host blocked you from rejoining this room."
           : "You were removed from this room by the host.";
 
       setAccessState(payload.actionType === "ban" ? "banned" : "kicked");
@@ -557,7 +597,11 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
 
       setMessageBody("");
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : describeApiError(caughtError, "Message could not be sent."));
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : describeApiError(caughtError, "Message could not be sent. Try again in a moment.")
+      );
     } finally {
       setIsSendingMessage(false);
     }
@@ -588,7 +632,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     const nextPosition = clampPlaybackPosition(positionSeconds, playbackDuration);
 
     if (!socket?.connected) {
-      setRealtimeError("Socket is not connected yet.");
+      setRealtimeError("Live sync is still connecting. Try again in a moment.");
       return;
     }
 
@@ -639,7 +683,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       return;
     }
 
-    if (actionType === "ban" && !window.confirm("Ban this participant from rejoining this room?")) {
+    if (actionType === "ban" && !window.confirm("Block this participant from rejoining this room?")) {
       return;
     }
 
@@ -650,7 +694,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     try {
       const action = await applyRoomModerationAction(room.id, {
         actionType,
-        reason: actionType === "ban" ? "Host banned this participant from the room." : "Host removed this participant from the room.",
+        reason: actionType === "ban" ? "Host blocked this participant from the room." : "Host removed this participant from the room.",
         targetUserId
       });
 
@@ -704,8 +748,8 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       await navigator.clipboard.writeText(roomShareUrl);
       setRoomLinkFeedback(
         room?.visibility === "private"
-          ? "Private room link copied. Invited members still need the password."
-          : "Room link copied."
+          ? "Private invite link copied. The room stays hidden, and invited members still need the password."
+          : "Room link copied. Anyone with access can open the live room from this link."
       );
     } catch {
       setRoomLinkFeedback("Copy failed. Select the room URL from your browser address bar.");
@@ -732,7 +776,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       return;
     }
 
-    if (!window.confirm("Close this room for everyone? This will end the live session.")) {
+    if (!window.confirm("End this room for everyone? The live session, chat, and entry will close immediately.")) {
       return;
     }
 
@@ -757,7 +801,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       return;
     }
 
-    if (isHost && !window.confirm("Leaving as host will end this room for everyone. Continue?")) {
+    if (isHost && !window.confirm("Leaving as host ends this room for everyone immediately. Continue?")) {
       return;
     }
 
@@ -837,39 +881,41 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       <header className="room-hero">
         <div className="room-hero-copy">
           <p className="eyebrow">
-            {room.visibility} room
+            {room.visibility === "private" ? "Private live room" : "Public live room"}
           </p>
           <h2>{room.title}</h2>
           <p>
-            Hosted by <strong>{room.host.displayName}</strong>
-            {isHost ? " | you are the host and room operator" : " | participant view"}.
+            <strong>{room.host.displayName}</strong> is hosting this shared YouTube session.
+            {isHost
+              ? " You control playback, moderation, and when the room ends."
+              : " You are joining the host's current live moment."}
           </p>
           <div className="room-meta-strip">
             <span>{room.category.name}</span>
             <span>{room.activeParticipantCount}/{room.participantLimit} active</span>
             <span>{room.visibility === "private" ? "Invite link + password" : "Discoverable public room"}</span>
-            <span>{room.source.provider}</span>
+            <span>{room.source.provider} video</span>
           </div>
         </div>
         <div className="room-hero-actions">
           <div className="room-status-stack">
-            <span className={`socket-pill ${socketStatus}`}>Socket: {socketStatus}</span>
-            <span className={`state-pill ${room.state}`}>{room.state}</span>
+            <span className={`socket-pill ${socketStatus}`}>{describeSocketStatus(socketStatus)}</span>
+            <span className={`state-pill ${room.state}`}>{describeRoomState(room.state)}</span>
           </div>
           <button className="secondary-action compact" onClick={() => void handleCopyRoomLink()} type="button">
             Copy room link
           </button>
           {isHost && !isEnded ? (
             <div className="host-control-strip" aria-label="Host room controls">
-              <span>Host controls</span>
+              <span>Host-only room control</span>
               <button className="danger-action compact" disabled={isClosing} onClick={() => void handleCloseRoom()} type="button">
-                {isClosing ? "Closing..." : "Close room"}
+                {isClosing ? "Ending room..." : "End room for everyone"}
               </button>
             </div>
           ) : null}
           {canUseRoom ? (
             <button className="secondary-action compact" disabled={isLeaving} onClick={() => void handleLeaveRoom()} type="button">
-              {isLeaving ? "Leaving..." : isHost ? "Leave and end room" : "Leave room"}
+              {isLeaving ? "Leaving..." : isHost ? "Leave and end session" : "Leave room"}
             </button>
           ) : null}
         </div>
@@ -902,7 +948,10 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
 
           {isEnded ? (
             <div className="state-banner">
-              <p>This room has ended. Chat and watch surfaces are closed for this session.</p>
+              <p>
+                This live session has ended. The shared player and chat are now closed, and the
+                room is no longer joinable.
+              </p>
               <div className="action-row">
                 <button className="secondary-action compact" onClick={() => onNavigate("/discover")} type="button">
                   Back to Discover
@@ -914,21 +963,30 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
             </div>
           ) : accessState === "full" ? (
             <div className="state-banner danger">
-              <p>This room is full right now. Chat and watch surfaces are locked until a spot opens.</p>
+              <p>
+                This room is at capacity right now. You can try again later if a spot opens,
+                or find another live room in Discover.
+              </p>
               <button className="secondary-action compact" onClick={() => onNavigate("/discover")} type="button">
                 Find another room
               </button>
             </div>
           ) : accessState === "banned" ? (
             <div className="state-banner danger">
-              <p>You are banned from rejoining this room. A direct room link or password cannot bypass this.</p>
+              <p>
+                The host has blocked this account from rejoining this room. A direct link or
+                private password cannot bypass that room-level restriction.
+              </p>
               <button className="secondary-action compact" onClick={() => onNavigate("/discover")} type="button">
                 Back to Discover
               </button>
             </div>
           ) : accessState === "kicked" ? (
             <div className="state-banner">
-              <p>You were removed from this room by the host. You may try to re-enter if the host has not banned you.</p>
+              <p>
+                You were removed by the host. If this was only a kick, you may try to re-enter;
+                if the host blocked you, entry will stay closed.
+              </p>
               <div className="action-row">
                 <button className="secondary-action compact" onClick={handleReEnterRoom} type="button">
                   Try re-entering
@@ -940,7 +998,10 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
             </div>
           ) : accessState === "left" ? (
             <div className="state-banner">
-              <p>You left this room. Chat and watch surfaces are paused for you, but you can re-enter while it stays live.</p>
+              <p>
+                You left the live room. The session can keep going without you, and re-entry
+                will sync you back to the host's current moment.
+              </p>
               <div className="action-row">
                 <button className="secondary-action compact" onClick={handleReEnterRoom} type="button">
                   Re-enter room
@@ -955,7 +1016,10 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
               <div>
                 <p className="eyebrow">Private room entry</p>
                 <h3>Enter the room password.</h3>
-                <p>This room is hidden from Discover. The invite link gets you here, but the password opens the room.</p>
+                <p>
+                  This room is hidden from Discover. The invite link brings you to the door;
+                  the host's password lets you enter the live session.
+                </p>
               </div>
               <label>
                 Private room password
@@ -981,9 +1045,10 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
             <div className="playback-panel">
               <div>
                 <p className="eyebrow">Shared YouTube playback</p>
-                <h3>{playback.status}</h3>
+                <h3>{isHost ? "Host timeline control" : "Following the host timeline"}</h3>
                 <p>
-                  Position {formatPlaybackTime(playbackPosition)} / {playbackDuration > 0 ? formatPlaybackTime(playbackDuration) : "--:--"} | Last host sync {formatMessageTime(playback.updatedAt)}
+                  {playback.status === "playing" ? "Playing" : "Paused"} at {formatPlaybackTime(playbackPosition)} / {playbackDuration > 0 ? formatPlaybackTime(playbackDuration) : "--:--"}.
+                  {" "}Last host sync {formatMessageTime(playback.updatedAt)}.
                 </p>
                 {playerError ? <p className="form-error">{playerError}</p> : null}
               </div>
@@ -1005,7 +1070,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                       value={clampPlaybackPosition(seekTargetSeconds, playbackDuration)}
                     />
                     <p>
-                      Drag the timeline, then sync the room to that moment.
+                      Drag the timeline, then sync every participant to that shared moment.
                     </p>
                   </div>
                   <div className="playback-jump-row">
@@ -1052,7 +1117,10 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                   </button>
                 </div>
               ) : (
-                <p className="state-banner success">Realtime playback follows the host. You can chat, but the timeline stays host-led.</p>
+                <p className="state-banner success">
+                  Realtime playback follows the host. You can watch and chat, while the shared
+                  timeline stays host-led.
+                </p>
               )}
             </div>
           ) : (
@@ -1061,10 +1129,14 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
         </main>
 
         <aside className="room-side participant-panel">
-          <p className="eyebrow">Participants</p>
+          <p className="eyebrow">Room presence</p>
           <h3>
             {room.activeParticipantCount}/{room.participantLimit} active
           </h3>
+          <p className="panel-intro">
+            The host leads the session. Participants bring the room to life through presence,
+            chat, and reports when something needs attention.
+          </p>
           <dl className="room-facts">
             <div>
               <dt>Host</dt>
@@ -1072,14 +1144,14 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
             </div>
             <div>
               <dt>Your state</dt>
-              <dd>{participant?.state ?? accessState}</dd>
+              <dd>{participant?.state === "active" ? describeAccessState(accessState) : participant?.state ?? describeAccessState(accessState)}</dd>
             </div>
             <div>
               <dt>Your role</dt>
               <dd>{participant?.role ?? "not joined"}</dd>
             </div>
             <div>
-              <dt>Socket presence</dt>
+              <dt>Live presence</dt>
               <dd>{presenceParticipants.length}</dd>
             </div>
             <div>
@@ -1093,7 +1165,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                 <li key={nextParticipant.id}>
                   <div>
                     <span>{nextParticipant.user.displayName}</span>
-                    <small>{nextParticipant.role}</small>
+                    <small>{nextParticipant.role === "host" ? "Host" : "Participant"}</small>
                   </div>
                   <div className="participant-actions">
                     <button
@@ -1120,7 +1192,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                           onClick={() => void handleModerationAction(nextParticipant.user.id, "kick")}
                           type="button"
                         >
-                          Kick
+                          Remove
                         </button>
                         <button
                           className="danger-action compact"
@@ -1128,7 +1200,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                           onClick={() => void handleModerationAction(nextParticipant.user.id, "ban")}
                           type="button"
                         >
-                          Ban
+                          Block
                         </button>
                       </>
                     ) : null}
@@ -1139,8 +1211,8 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
           ) : (
             <p className="empty-state">
               {canUseRoom
-                ? "Presence is warming up. Connected participants will appear here."
-                : "Participants become visible after you enter the room."}
+                ? "You are in the room. Other connected participants will appear here as they join the live moment."
+                : "Participant presence becomes visible after you enter the live room."}
             </p>
           )}
           <div className="report-panel">
@@ -1205,7 +1277,10 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                 </div>
               </form>
             ) : (
-              <p>Reports are stored for later admin review with room context.</p>
+              <p>
+                Reports keep room, user, and message context attached so the platform can
+                review the situation later.
+              </p>
             )}
           </div>
           {moderationFeedback ? <p className="state-banner success">{moderationFeedback}</p> : null}
@@ -1218,9 +1293,9 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
           <div className="chat-header">
             <div>
               <p className="eyebrow">Room chat</p>
-              <h3>Live persisted messages</h3>
+              <h3>Live reactions around this moment</h3>
             </div>
-            <span>{messages.length} loaded | {socketStatus}</span>
+            <span>{messages.length} messages | {describeSocketStatus(socketStatus)}</span>
           </div>
 
           <div className="message-list">
@@ -1252,9 +1327,13 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                 </article>
               ))
             ) : canUseRoom ? (
-              <p className="empty-chat">No messages yet. Be the first spark.</p>
+              <p className="empty-chat">
+                No messages yet. Drop the first reaction when the moment hits.
+              </p>
             ) : (
-              <p className="empty-chat">Join the live room before reading or sending chat.</p>
+              <p className="empty-chat">
+                Enter the live room to read and send chat for this session.
+              </p>
             )}
           </div>
 
@@ -1263,7 +1342,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
               disabled={!canUseRoom || isSendingMessage}
               maxLength={500}
               onChange={(event) => setMessageBody(event.target.value)}
-              placeholder={canUseRoom ? "Send a message..." : "Chat locked until you join"}
+              placeholder={canUseRoom ? "React to the room..." : "Chat opens after you enter"}
               value={messageBody}
             />
             <button className="primary-action compact" disabled={!canUseRoom || isSendingMessage || !messageBody.trim()} type="submit">

@@ -727,7 +727,7 @@ button {
 .room-session-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
+  grid-template-columns: minmax(0, 1.18fr) minmax(280px, 0.48fr);
 }
 
 .profile-settings-grid {
@@ -1079,6 +1079,7 @@ button {
 .watch-panel {
   display: grid;
   gap: 1rem;
+  min-width: 0;
 }
 
 .video-plane {
@@ -1180,6 +1181,12 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 1.25rem;
+}
+
+.panel-intro {
+  color: var(--muted);
+  line-height: 1.55;
+  margin: 0.65rem 0 0;
 }
 
 .room-status-row {
@@ -1391,7 +1398,7 @@ button {
 
 .playback-panel {
   background: rgba(13, 15, 16, 0.42);
-  border: 1px solid var(--line);
+  border: 1px solid rgba(242, 179, 125, 0.24);
   border-radius: 8px;
   display: grid;
   gap: 1rem;
