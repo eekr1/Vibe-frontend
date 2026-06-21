@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import {
   applyAdminReportAction,
   createAdminCategory,
@@ -88,6 +88,42 @@ const reportActionLabels: Record<AdminReportAction, string> = {
   suspend_user: "Suspend account"
 };
 
+const sectionDescriptions: Record<AdminSection, string> = {
+  categories: "Manage public room categories and whether they appear in room creation.",
+  content: "Manage admin-only drafts and published trust pages without turning this into a full CMS.",
+  moderation: "Review room moderation and platform admin action history in one traceable surface.",
+  overview: "Scan platform health, recent reports, and recent room activity before going deeper.",
+  reports: "Triage submitted reports, inspect context, and take controlled platform action when needed.",
+  rooms: "Inspect live and ended rooms, host context, reports, messages, and participation signals.",
+  users: "Review member identity, account state, report history, and operational user context."
+};
+
+const reportStatusLabels: Record<AdminReportStatus, string> = {
+  action_taken: "Action taken",
+  dismissed: "Dismissed",
+  escalated: "Escalated",
+  open: "Open",
+  reviewed: "Reviewed"
+};
+
+const contentStatusLabels: Record<AdminPlatformContent["status"], string> = {
+  draft: "Draft only",
+  published: "Published"
+};
+
+const auditActionLabels: Record<AdminPlatformContentDetail["audits"][number]["actionType"], string> = {
+  draft_saved: "Draft saved",
+  published: "Published",
+  unpublished: "Unpublished"
+};
+
+function formatAdminToken(value: string) {
+  return value
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 function describeAdminError(error: unknown, fallback: string) {
   if (error instanceof ApiClientError) {
     return error.message;
@@ -115,6 +151,25 @@ function compactId(value: string) {
 
 function includesSearch(value: string, search: string) {
   return value.toLowerCase().includes(search.toLowerCase());
+}
+
+function AdminEmptyState({ body, title }: { body: string; title: string }) {
+  return (
+    <div className="admin-empty-state">
+      <strong>{title}</strong>
+      <span>{body}</span>
+    </div>
+  );
+}
+
+function AdminStatusPill({
+  children,
+  tone = "neutral"
+}: {
+  children: ReactNode;
+  tone?: "danger" | "neutral" | "success" | "warning";
+}) {
+  return <span className={`admin-status-pill ${tone}`}>{children}</span>;
 }
 
 export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
@@ -155,6 +210,8 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const returnTo = `${window.location.pathname}${window.location.search}`;
   const search = searchTerm.trim();
+  const activeSectionLabel = sections.find((section) => section.id === activeSection)?.label ?? "Admin";
+  const activeSectionDescription = sectionDescriptions[activeSection];
 
   async function loadAdminData() {
     setError(null);
@@ -268,7 +325,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
   }
 
   async function handleReportReview(reportId: string, status: Exclude<AdminReportStatus, "open">) {
-    if (!window.confirm(`Mark this report as ${status}? This updates the durable review status.`)) {
+    if (!window.confirm(`Mark this report as ${reportStatusLabels[status]}? This updates the durable review status without applying platform action.`)) {
       return;
     }
 
@@ -284,7 +341,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
       setSelectedReportDetail((currentDetail) =>
         currentDetail?.report.id === result.report.id ? { ...currentDetail, report: result.report } : currentDetail
       );
-      setSuccess(`Report ${compactId(reportId)} marked as ${status}.`);
+      setSuccess(`Report ${compactId(reportId)} marked as ${reportStatusLabels[status]}. No platform state changed.`);
     } catch (caughtError) {
       setError(describeAdminError(caughtError, "Report review update failed."));
     } finally {
@@ -316,7 +373,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
 
     if (
       !window.confirm(
-        `${actionLabel} from report ${compactId(report.id)}? This will change platform state, log an admin action, and mark the report as action_taken.`
+        `${actionLabel} from report ${compactId(report.id)}? This changes platform state, logs an admin action, and marks the report as Action taken.`
       )
     ) {
       return;
@@ -371,7 +428,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
       }
 
       setReportActionReason("");
-      setSuccess(`${actionLabel} applied and logged for report ${compactId(report.id)}.`);
+      setSuccess(`${actionLabel} applied, logged, and connected to report ${compactId(report.id)}.`);
     } catch (caughtError) {
       setError(describeAdminError(caughtError, `${actionLabel} could not be applied.`));
     } finally {
@@ -408,7 +465,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
       setSelectedUserDetail((currentDetail) =>
         currentDetail?.user.id === result.user.id ? { ...currentDetail, user: result.user } : currentDetail
       );
-      setSuccess(`${result.user.displayName} is now ${result.user.accountState}.`);
+      setSuccess(`${result.user.displayName} account state changed to ${formatAdminToken(result.user.accountState)}.`);
     } catch (caughtError) {
       setError(describeAdminError(caughtError, "Account state update failed."));
     } finally {
@@ -439,7 +496,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
       setCategoryName("");
       setCategorySlug("");
       setCategorySortOrder(0);
-      setSuccess(`Category ${result.category.name} created.`);
+      setSuccess(`Category ${result.category.name} created. ${result.category.isActive ? "It is available in room creation." : "It is hidden until activated."}`);
     } catch (caughtError) {
       setError(describeAdminError(caughtError, "Category could not be created."));
     } finally {
@@ -448,6 +505,13 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
   }
 
   async function handleToggleCategory(category: AdminCategory) {
+    if (
+      category.isActive &&
+      !window.confirm(`Deactivate ${category.name}? It will stop appearing in public room creation category lists.`)
+    ) {
+      return;
+    }
+
     setError(null);
     setSuccess(null);
     setIsMutating(`category:${category.id}`);
@@ -459,7 +523,9 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
       setCategories((currentCategories) =>
         currentCategories.map((nextCategory) => (nextCategory.id === result.category.id ? result.category : nextCategory))
       );
-      setSuccess(`${result.category.name} is now ${result.category.isActive ? "active" : "inactive"}.`);
+      setSuccess(
+        `${result.category.name} is now ${result.category.isActive ? "active and visible in room creation" : "inactive and hidden from room creation"}.`
+      );
     } catch (caughtError) {
       setError(describeAdminError(caughtError, "Category could not be updated."));
     } finally {
@@ -508,7 +574,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
           .sort((left, right) => left.sortOrder - right.sortOrder)
       );
       handleCancelCategoryEdit();
-      setSuccess(`Category ${result.category.name} updated.`);
+      setSuccess(`Category ${result.category.name} updated. Public category lists will use the latest saved state.`);
     } catch (caughtError) {
       setError(describeAdminError(caughtError, "Category could not be updated."));
     } finally {
@@ -538,7 +604,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
           content.pageKey === detail.content.pageKey ? detail.content : content
         )
       );
-      setSuccess(`${detail.content.title} draft saved. Public page is unchanged until you publish.`);
+      setSuccess(`${detail.content.title} draft saved. The public page is unchanged until you publish.`);
     } catch (caughtError) {
       setError(describeAdminError(caughtError, "Platform content draft could not be saved."));
     } finally {
@@ -547,7 +613,12 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
   }
 
   async function handlePublishContent(pageKey: AdminPlatformContentPageKey) {
-    if (!window.confirm("Publish this draft to the public page? Visitors will see the published version immediately.")) {
+    const contentTitle =
+      selectedContentDetail?.content.pageKey === pageKey
+        ? selectedContentDetail.content.title
+        : platformContents.find((content) => content.pageKey === pageKey)?.title ?? pageKey;
+
+    if (!window.confirm(`Publish ${contentTitle}? Visitors will see this version immediately.`)) {
       return;
     }
 
@@ -563,7 +634,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
           content.pageKey === detail.content.pageKey ? detail.content : content
         )
       );
-      setSuccess(`${detail.content.title} published.`);
+      setSuccess(`${detail.content.title} published. The public trust page now uses this version.`);
     } catch (caughtError) {
       setError(describeAdminError(caughtError, "Platform content could not be published."));
     } finally {
@@ -751,7 +822,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
           ))}
         </nav>
         <div className="admin-debug-card">
-          <strong>Debug visibility</strong>
+          <strong>Operational visibility</strong>
           <span>Loaded: {lastLoadedAt ? formatDate(lastLoadedAt) : "not loaded yet"}</span>
           <span>Users: {users.length}</span>
           <span>Rooms: {rooms.length}</span>
@@ -766,7 +837,8 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
         <header className="admin-toolbar">
           <div>
             <p className="eyebrow">Admin surface</p>
-            <h2>{sections.find((section) => section.id === activeSection)?.label}</h2>
+            <h2>{activeSectionLabel}</h2>
+            <p className="admin-section-description">{activeSectionDescription}</p>
           </div>
           <div className="admin-toolbar-actions">
             <input
@@ -784,9 +856,9 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
 
         {error ? <p className="form-error">{error}</p> : null}
         {success ? <p className="state-banner success">{success}</p> : null}
-            {search ? (
+        {search ? (
           <p className="state-banner">
-            Filtering loaded admin data for "{search}". Overview results: {visibleOverviewReports.length} reports,{" "}
+            Searching loaded admin data for "{search}". Overview results: {visibleOverviewReports.length} reports,{" "}
             {visibleOverviewRooms.length} rooms. Section results: {visibleUsers.length} users, {visibleRooms.length} rooms,{" "}
             {visibleReports.length} reports, {visibleModerationActions.length} room actions,{" "}
             {visibleAdminActionLogs.length} admin actions, {visibleCategories.length} categories, {visiblePlatformContents.length}{" "}
@@ -828,12 +900,19 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
           <div className="admin-list-grid">
             <article className="admin-card">
               <h3>Recent reports</h3>
-              {visibleOverviewReports.length === 0 ? <p>No recent reports match the current search.</p> : null}
+              {visibleOverviewReports.length === 0 ? (
+                <AdminEmptyState
+                  body="No recent report cards match the current search. Clear search to see the latest queue."
+                  title="No matching reports"
+                />
+              ) : null}
               {visibleOverviewReports.map((report) => (
                 <div className="admin-row" key={report.id}>
                   <div>
                     <strong>{report.reason}</strong>
-                    <span>{report.targetType} | {report.status}</span>
+                    <span>
+                      {report.targetType} <AdminStatusPill tone={report.status === "open" ? "warning" : "neutral"}>{reportStatusLabels[report.status]}</AdminStatusPill>
+                    </span>
                   </div>
                   <div className="admin-action-stack">
                     <small>{formatDate(report.createdAt)}</small>
@@ -851,7 +930,12 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
             </article>
             <article className="admin-card">
               <h3>Recent rooms</h3>
-              {visibleOverviewRooms.length === 0 ? <p>No recent rooms match the current search.</p> : null}
+              {visibleOverviewRooms.length === 0 ? (
+                <AdminEmptyState
+                  body="No recent room cards match the current search. Clear search to return to the operational overview."
+                  title="No matching rooms"
+                />
+              ) : null}
               {visibleOverviewRooms.map((room) => (
                 <div className="admin-row" key={room.id}>
                   <div>
@@ -878,12 +962,22 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
         {activeSection === "users" ? (
           <div className="admin-card">
             <h3>Users management</h3>
-            {visibleUsers.length === 0 ? <p>No users match the current search.</p> : null}
+            {visibleUsers.length === 0 ? (
+              <AdminEmptyState
+                body="No users match the current search. Try username, display name, email, role, or account state."
+                title="No matching users"
+              />
+            ) : null}
             {visibleUsers.map((user) => (
               <div className="admin-row" key={user.id}>
                 <div>
                   <strong>{user.displayName}</strong>
-                  <span>{user.email} | @{user.username} | {user.role}</span>
+                  <span>
+                    {user.email} | @{user.username} | {user.role}{" "}
+                    <AdminStatusPill tone={user.accountState === "active" ? "success" : "danger"}>
+                      {formatAdminToken(user.accountState)}
+                    </AdminStatusPill>
+                  </span>
                   <small>
                     rooms {user.stats.hostedRooms} | reports made {user.stats.reportsMade} | reports received{" "}
                     {user.stats.reportsReceived}
@@ -920,7 +1014,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                     <h3>{selectedUserDetail.user.displayName}</h3>
                     <p>
                       @{selectedUserDetail.user.username} | {selectedUserDetail.user.email} | {selectedUserDetail.user.role} |{" "}
-                      {selectedUserDetail.user.accountState}
+                      {formatAdminToken(selectedUserDetail.user.accountState)}
                     </p>
                   </div>
                   <button className="secondary-action compact" onClick={() => setSelectedUserDetail(null)} type="button">
@@ -949,20 +1043,26 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                     <h4>Recent reports targeting user</h4>
                     {selectedUserDetail.history.reportsReceived.length > 0 ? (
                       selectedUserDetail.history.reportsReceived.map((report) => (
-                        <p key={report.id}>{report.reason} | {report.status} | {formatDate(report.createdAt)}</p>
+                        <p key={report.id}>{report.reason} | {reportStatusLabels[report.status]} | {formatDate(report.createdAt)}</p>
                       ))
                     ) : (
-                      <p>No recent targeting reports.</p>
+                      <AdminEmptyState
+                        body="This user has no recent reports received in the loaded admin context."
+                        title="No targeting reports"
+                      />
                     )}
                   </div>
                   <div>
                     <h4>Recent moderation received</h4>
                     {selectedUserDetail.history.moderationActionsReceived.length > 0 ? (
                       selectedUserDetail.history.moderationActionsReceived.map((action) => (
-                        <p key={action.id}>{action.actionType} in {action.room.title} | {formatDate(action.createdAt)}</p>
+                        <p key={action.id}>{formatAdminToken(action.actionType)} in {action.room.title} | {formatDate(action.createdAt)}</p>
                       ))
                     ) : (
-                      <p>No recent moderation actions.</p>
+                      <AdminEmptyState
+                        body="No recent room-level moderation actions target this user."
+                        title="No moderation history"
+                      />
                     )}
                   </div>
                 </div>
@@ -974,13 +1074,21 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
         {activeSection === "rooms" ? (
           <div className="admin-card">
             <h3>Rooms management</h3>
-            {visibleRooms.length === 0 ? <p>No rooms match the current search.</p> : null}
+            {visibleRooms.length === 0 ? (
+              <AdminEmptyState
+                body="No rooms match the current search. Try room title, host, category, state, or visibility."
+                title="No matching rooms"
+              />
+            ) : null}
             {visibleRooms.map((room) => (
               <div className="admin-row" key={room.id}>
                 <div>
                   <strong>{room.title}</strong>
                   <span>
-                    {room.state} | {room.visibility} | {room.category.name} | host {room.host.displayName}
+                    <AdminStatusPill tone={room.state === "live" ? "success" : room.state === "ended" ? "neutral" : "danger"}>
+                      {formatAdminToken(room.state)}
+                    </AdminStatusPill>{" "}
+                    {room.visibility} | {room.category.name} | host {room.host.displayName}
                   </span>
                   <small>
                     participants {room.stats.participants} | messages {room.stats.messages} | reports {room.stats.reports} |
@@ -1007,7 +1115,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                     <p className="eyebrow">Room detail</p>
                     <h3>{selectedRoomDetail.room.title}</h3>
                     <p>
-                      {selectedRoomDetail.room.state} | {selectedRoomDetail.room.visibility} | host{" "}
+                      {formatAdminToken(selectedRoomDetail.room.state)} | {selectedRoomDetail.room.visibility} | host{" "}
                       {selectedRoomDetail.room.host.displayName} | {selectedRoomDetail.room.category.name}
                     </p>
                   </div>
@@ -1045,10 +1153,13 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                     <h4>Recent reports</h4>
                     {selectedRoomDetail.history.reports.length > 0 ? (
                       selectedRoomDetail.history.reports.map((report) => (
-                        <p key={report.id}>{report.reason} | {report.status} | {formatDate(report.createdAt)}</p>
+                        <p key={report.id}>{report.reason} | {reportStatusLabels[report.status]} | {formatDate(report.createdAt)}</p>
                       ))
                     ) : (
-                      <p>No recent room reports.</p>
+                      <AdminEmptyState
+                        body="This room has no recent reports in the loaded admin context."
+                        title="No room reports"
+                      />
                     )}
                   </div>
                 </div>
@@ -1069,7 +1180,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                 >
                   {reportStatusFilters.map((status) => (
                     <option key={status} value={status}>
-                      {status}
+                      {status === "all" ? "All statuses" : reportStatusLabels[status]}
                     </option>
                   ))}
                 </select>
@@ -1082,19 +1193,28 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                 >
                   {reportTargetTypeFilters.map((targetType) => (
                     <option key={targetType} value={targetType}>
-                      {targetType}
+                      {targetType === "all" ? "All targets" : formatAdminToken(targetType)}
                     </option>
                   ))}
                 </select>
               </label>
             </div>
-            {visibleReports.length === 0 ? <p>No reports match the current filters.</p> : null}
+            {visibleReports.length === 0 ? (
+              <AdminEmptyState
+                body="No reports match this status, target, and search combination. Clear filters to inspect the full queue."
+                title="No matching reports"
+              />
+            ) : null}
             {visibleReports.map((report) => (
               <div className="admin-row admin-row-tall" key={report.id}>
                 <div>
                   <strong>{report.reason}</strong>
                   <span>
-                    {report.targetType} | {report.status} | reporter {report.reporter.displayName}
+                    {report.targetType}{" "}
+                    <AdminStatusPill tone={report.status === "open" ? "warning" : report.status === "action_taken" ? "success" : "neutral"}>
+                      {reportStatusLabels[report.status]}
+                    </AdminStatusPill>{" "}
+                    reporter {report.reporter.displayName}
                   </span>
                   <small>
                     target {compactId(report.targetId)}
@@ -1120,7 +1240,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                       onClick={() => void handleReportReview(report.id, status)}
                       type="button"
                     >
-                      {status}
+                      {reportStatusLabels[status]}
                     </button>
                   ))}
                 </div>
@@ -1136,6 +1256,9 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                       {selectedReportDetail.report.targetType} | {selectedReportDetail.report.status} | reporter{" "}
                       {selectedReportDetail.report.reporter.displayName}
                     </p>
+                    <AdminStatusPill tone={selectedReportDetail.report.status === "open" ? "warning" : selectedReportDetail.report.status === "action_taken" ? "success" : "neutral"}>
+                      {reportStatusLabels[selectedReportDetail.report.status]}
+                    </AdminStatusPill>
                   </div>
                   <button className="secondary-action compact" onClick={() => setSelectedReportDetail(null)} type="button">
                     Close detail
@@ -1163,14 +1286,14 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                     <p>Related moderation actions: {selectedReportDetail.context.relatedModerationActions.length}</p>
                     <p>Related admin actions: {selectedReportDetail.context.relatedAdminActions.length}</p>
                     {selectedReportDetail.context.relatedModerationActions.slice(0, 4).map((action) => (
-                      <p key={action.id}>{action.actionType} | {action.target.displayName} | {formatDate(action.createdAt)}</p>
+                      <p key={action.id}>{formatAdminToken(action.actionType)} | {action.target.displayName} | {formatDate(action.createdAt)}</p>
                     ))}
                   </div>
                   <div>
                     <h4>Take platform action</h4>
                     <p>
                       These actions change real platform state, create an admin action log, and mark the report as
-                      action_taken.
+                      Action taken.
                     </p>
                     <label>
                       Action reason
@@ -1184,7 +1307,10 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                     </label>
                     <div className="admin-action-stack">
                       {getReportActions(selectedReportDetail.report).length === 0 ? (
-                        <p>No direct action is available for this report target.</p>
+                        <AdminEmptyState
+                          body="This target has no direct platform action from the current report shape."
+                          title="No direct action"
+                        />
                       ) : (
                         getReportActions(selectedReportDetail.report).map((action) => (
                           <button
@@ -1209,12 +1335,15 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                     {selectedReportDetail.context.relatedAdminActions.length > 0 ? (
                       selectedReportDetail.context.relatedAdminActions.slice(0, 6).map((action) => (
                         <p key={action.id}>
-                          {action.actionType} | {action.targetType} {compactId(action.targetId)} |{" "}
+                          {formatAdminToken(action.actionType)} | {action.targetType} {compactId(action.targetId)} |{" "}
                           {action.actor.displayName} | {formatDate(action.createdAt)}
                         </p>
                       ))
                     ) : (
-                      <p>No platform action logged for this report context yet.</p>
+                      <AdminEmptyState
+                        body="No admin action has been taken from this report context yet. Review status can still be updated separately."
+                        title="No platform action yet"
+                      />
                     )}
                   </div>
                 </div>
@@ -1227,11 +1356,16 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
           <div className="admin-list-grid">
             <article className="admin-card">
               <h3>Room moderation history</h3>
-              {visibleModerationActions.length === 0 ? <p>No room moderation actions match the current search.</p> : null}
+              {visibleModerationActions.length === 0 ? (
+                <AdminEmptyState
+                  body="No host room moderation actions match the current search."
+                  title="No matching room actions"
+                />
+              ) : null}
               {visibleModerationActions.map((action) => (
                 <div className="admin-row" key={action.id}>
                   <div>
-                    <strong>{action.actionType}</strong>
+                    <strong>{formatAdminToken(action.actionType)}</strong>
                     <span>
                       {action.actor.displayName}
                       {" -> "}
@@ -1245,11 +1379,16 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
             </article>
             <article className="admin-card">
               <h3>Platform admin action history</h3>
-              {visibleAdminActionLogs.length === 0 ? <p>No platform admin actions match the current search.</p> : null}
+              {visibleAdminActionLogs.length === 0 ? (
+                <AdminEmptyState
+                  body="No platform-level admin actions match the current search."
+                  title="No matching admin actions"
+                />
+              ) : null}
               {visibleAdminActionLogs.map((action) => (
                 <div className="admin-row" key={action.id}>
                   <div>
-                    <strong>{action.actionType}</strong>
+                    <strong>{formatAdminToken(action.actionType)}</strong>
                     <span>
                       {action.actor.displayName} | {action.targetType} {compactId(action.targetId)}
                     </span>
@@ -1272,13 +1411,25 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
               <p>
                 Manage the public trust pages from here. Saving a draft does not change the public page; publishing does.
               </p>
-              {visiblePlatformContents.length === 0 ? <p>No content pages match the current search.</p> : null}
+              <p className="admin-helper-text">
+                Admin-only section. Moderators should not see this surface later unless explicitly granted.
+              </p>
+              {visiblePlatformContents.length === 0 ? (
+                <AdminEmptyState
+                  body="No trust/legal content pages match the current search."
+                  title="No matching content pages"
+                />
+              ) : null}
               {visiblePlatformContents.map((content) => (
                 <div className="admin-row" key={content.pageKey}>
                   <div>
                     <strong>{content.title}</strong>
                     <span>
-                      {content.pageKey} | {content.status} | published {formatDate(content.publishedAt)}
+                      {content.pageKey}{" "}
+                      <AdminStatusPill tone={content.status === "published" ? "success" : "warning"}>
+                        {contentStatusLabels[content.status]}
+                      </AdminStatusPill>{" "}
+                      published {formatDate(content.publishedAt)}
                     </span>
                     <small>
                       Last editor {content.lastEditor?.displayName ?? "not set"} | last publisher{" "}
@@ -1317,6 +1468,9 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                       Draft updated {formatDate(selectedContentDetail.content.draftUpdatedAt)} | Published{" "}
                       {formatDate(selectedContentDetail.content.publishedAt)}
                     </p>
+                    <AdminStatusPill tone={selectedContentDetail.content.status === "published" ? "success" : "warning"}>
+                      {contentStatusLabels[selectedContentDetail.content.status]}
+                    </AdminStatusPill>
                   </div>
                   <button className="secondary-action compact" onClick={() => setSelectedContentDetail(null)} type="button">
                     Close editor
@@ -1324,6 +1478,9 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                 </div>
 
                 <form className="admin-edit-panel" onSubmit={handleSaveContentDraft}>
+                  <p className="admin-helper-text">
+                    Save draft keeps this change internal. Publish draft updates the public page immediately.
+                  </p>
                   <label>
                     Title
                     <input
@@ -1365,7 +1522,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                     <h4>Published version</h4>
                     <p>{selectedContentDetail.content.publishedTitle ?? "Not published yet"}</p>
                     <p className="admin-quote">
-                      {selectedContentDetail.content.publishedBody ?? "The public page will use fallback copy until this content is published."}
+                      {selectedContentDetail.content.publishedBody ?? "The public page will use current platform fallback content until this page is published."}
                     </p>
                   </div>
                   <div>
@@ -1373,11 +1530,14 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                     {selectedContentDetail.audits.length > 0 ? (
                       selectedContentDetail.audits.map((audit) => (
                         <p key={audit.id}>
-                          {audit.actionType} by {audit.actor.displayName} | {formatDate(audit.createdAt)}
+                          {auditActionLabels[audit.actionType]} by {audit.actor.displayName} | {formatDate(audit.createdAt)}
                         </p>
                       ))
                     ) : (
-                      <p>No audit events yet.</p>
+                      <AdminEmptyState
+                        body="Draft saves and publish events will appear here with actor and timestamp."
+                        title="No audit events yet"
+                      />
                     )}
                   </div>
                 </div>
@@ -1422,7 +1582,12 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
 
             <article className="admin-card">
               <h3>Categories management</h3>
-              {visibleCategories.length === 0 ? <p>No categories match the current search.</p> : null}
+              {visibleCategories.length === 0 ? (
+                <AdminEmptyState
+                  body="No categories match the current search. Clear search or create a new category."
+                  title="No matching categories"
+                />
+              ) : null}
               {visibleCategories.map((category) => (
                 <div className="admin-row" key={category.id}>
                   {editingCategoryId === category.id ? (
@@ -1471,7 +1636,11 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                       <div>
                         <strong>{category.name}</strong>
                         <span>{category.slug} | sort {category.sortOrder} | rooms {category.roomCount}</span>
-                        <small>{category.isActive ? "Active in room creation" : "Hidden from room creation"}</small>
+                        <small>
+                          <AdminStatusPill tone={category.isActive ? "success" : "warning"}>
+                            {category.isActive ? "Active in room creation" : "Hidden from room creation"}
+                          </AdminStatusPill>
+                        </small>
                       </div>
                       <div className="admin-action-stack">
                         <button
