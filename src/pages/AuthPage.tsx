@@ -38,6 +38,34 @@ function readResetToken() {
   return params.get("token") ?? "";
 }
 
+function getIntentCopy(returnTo: string) {
+  if (returnTo.startsWith("/room")) {
+    return {
+      body: "Log in or create an account, then Vibehall will continue toward the room you chose.",
+      label: "Room entry"
+    };
+  }
+
+  if (returnTo === "/create-room") {
+    return {
+      body: "Create a member account or log in, then continue to launching your room.",
+      label: "Host a room"
+    };
+  }
+
+  if (returnTo === "/profile") {
+    return {
+      body: "Sign in to manage the identity people see in rooms, chat, and reports.",
+      label: "Profile access"
+    };
+  }
+
+  return {
+    body: "Membership keeps room ownership, chat identity, reports, and moderation history connected to one clear profile.",
+    label: "Member access"
+  };
+}
+
 async function requestPasswordReset(email: string) {
   return apiRequest<{ message: string }>("/auth/password-reset/request", {
     body: { email },
@@ -69,6 +97,16 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
   const returnTo = useMemo(readReturnTo, []);
   const resetToken = useMemo(readResetToken, []);
   const resetTokenMissing = mode === "reset" && !resetToken;
+  const intentCopy = useMemo(() => getIntentCopy(returnTo), [returnTo]);
+  const isRoomOrActionIntent = returnTo !== "/";
+  const modeTitle =
+    mode === "login"
+      ? "Log in to continue"
+      : mode === "signup"
+        ? "Create your member account"
+        : mode === "forgot"
+          ? "Reset your password"
+          : "Choose a new password";
 
   function switchMode(nextMode: AuthMode) {
     setError(null);
@@ -134,34 +172,62 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
   }
 
   return (
-    <section className="auth-layout">
-      <form className="auth-panel" onSubmit={handleSubmit}>
-        <p className="eyebrow">
-          {mode === "login"
-            ? "Member login"
-            : mode === "signup"
-              ? "Create account"
-              : mode === "forgot"
-                ? "Password recovery"
-                : "Set a new password"}
-        </p>
-        <h2>
-          {mode === "login"
-            ? "Log in to continue"
-            : mode === "signup"
-              ? "Join Vibehall"
-              : mode === "forgot"
-                ? "Reset your password"
-                : "Choose a new password"}
-        </h2>
+    <section className="auth-layout identity-layout">
+      <aside className="auth-context-panel surface-panel">
+        <p className="eyebrow">{intentCopy.label}</p>
+        <h2>{isRoomOrActionIntent ? "Keep your place in the flow." : "Enter Vibehall as a member."}</h2>
+        <p>{intentCopy.body}</p>
+        <div className="identity-step-list" aria-label="Authentication flow context">
+          <span>Browse as guest</span>
+          <span>Authenticate once</span>
+          <span>Join or host live</span>
+        </div>
+      </aside>
+
+      <form className="auth-panel identity-form-panel" onSubmit={handleSubmit}>
+        <div className="auth-mode-header">
+          <div>
+            <p className="eyebrow">
+              {mode === "login"
+                ? "Member login"
+                : mode === "signup"
+                  ? "New member"
+                  : mode === "forgot"
+                    ? "Password recovery"
+                    : "Reset password"}
+            </p>
+            <h2>{modeTitle}</h2>
+          </div>
+          {mode === "login" || mode === "signup" ? (
+            <div className="auth-mode-switch" aria-label="Authentication mode">
+              <button
+                aria-pressed={mode === "login"}
+                className={mode === "login" ? "is-active" : ""}
+                onClick={() => switchMode("login")}
+                type="button"
+              >
+                Log in
+              </button>
+              <button
+                aria-pressed={mode === "signup"}
+                className={mode === "signup" ? "is-active" : ""}
+                onClick={() => switchMode("signup")}
+                type="button"
+              >
+                Sign up
+              </button>
+            </div>
+          ) : null}
+        </div>
+
         <p className="form-intro">
           {mode === "forgot"
             ? "Enter your account email. If it exists, we will send a private reset link without exposing account status."
             : mode === "reset"
               ? "Use the reset link from your email. The link is single-use and expires soon."
-              : returnTo === "/"
-                ? "Your account keeps room ownership, chat identity, reports, and moderation history connected to one clear member profile."
-                : "Finish this step and we will take you back to the room or action you started."}
+              : isRoomOrActionIntent
+                ? "This step protects room identity and sends you back to the action you started."
+                : "Use the same identity for rooms, chat, reports, and hosting."}
         </p>
 
         {mode === "login" ? (
@@ -187,29 +253,31 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
                 value={email}
               />
             </label>
-            <label>
-              Username
-              <span className="field-hint">Your stable handle for login and account identity.</span>
-              <input
-                autoComplete="username"
-                onChange={(event) => setUsername(event.target.value)}
-                pattern="[a-zA-Z0-9_]+"
-                required
-                type="text"
-                value={username}
-              />
-            </label>
-            <label>
-              Display name
-              <span className="field-hint">The name people see in rooms, chat, and reports.</span>
-              <input
-                autoComplete="name"
-                onChange={(event) => setDisplayName(event.target.value)}
-                required
-                type="text"
-                value={displayName}
-              />
-            </label>
+            <div className="form-grid">
+              <label>
+                Username
+                <span className="field-hint">Your stable handle for login and account identity.</span>
+                <input
+                  autoComplete="username"
+                  onChange={(event) => setUsername(event.target.value)}
+                  pattern="[a-zA-Z0-9_]+"
+                  required
+                  type="text"
+                  value={username}
+                />
+              </label>
+              <label>
+                Display name
+                <span className="field-hint">The name people see in rooms, chat, and reports.</span>
+                <input
+                  autoComplete="name"
+                  onChange={(event) => setDisplayName(event.target.value)}
+                  required
+                  type="text"
+                  value={displayName}
+                />
+              </label>
+            </div>
           </>
         ) : mode === "forgot" ? (
           <label>
@@ -225,7 +293,14 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
         ) : null}
 
         {resetTokenMissing ? (
-          <p className="form-error">This reset link is missing its token. Please request a new password reset link.</p>
+          <div className="form-error">
+            This reset link is missing its token. Please request a new password reset link.
+            <div className="action-row">
+              <button className="text-action compact" onClick={() => switchMode("forgot")} type="button">
+                Request new link
+              </button>
+            </div>
+          </div>
         ) : null}
 
         {mode !== "forgot" && !resetTokenMissing ? (
@@ -271,25 +346,27 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
                   : "Reset password"}
         </button>
 
-        {mode === "login" ? (
-          <button className="text-action" onClick={() => switchMode("forgot")} type="button">
-            Forgot password?
-          </button>
-        ) : null}
+        <div className="auth-secondary-actions">
+          {mode === "login" ? (
+            <button className="text-action" onClick={() => switchMode("forgot")} type="button">
+              Forgot password?
+            </button>
+          ) : null}
 
-        {mode === "forgot" || mode === "reset" ? (
-          <button className="text-action" onClick={() => switchMode("login")} type="button">
-            Back to login
-          </button>
-        ) : (
-          <button
-            className="text-action"
-            onClick={() => switchMode(mode === "login" ? "signup" : "login")}
-            type="button"
-          >
-            {mode === "login" ? "Create an account" : "I already have an account"}
-          </button>
-        )}
+          {mode === "forgot" || mode === "reset" ? (
+            <button className="text-action" onClick={() => switchMode("login")} type="button">
+              Back to login
+            </button>
+          ) : (
+            <button
+              className="text-action"
+              onClick={() => switchMode(mode === "login" ? "signup" : "login")}
+              type="button"
+            >
+              {mode === "login" ? "Create an account" : "I already have an account"}
+            </button>
+          )}
+        </div>
       </form>
     </section>
   );

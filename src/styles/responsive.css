@@ -23,13 +23,17 @@
   .create-room-layout,
   .discover-control-panel,
   .discover-hero,
+  .form-grid,
   .home-hero,
   .home-split-band,
   .home-story-grid,
+  .identity-layout,
+  .launch-action-row,
   .playback-controls,
-  .profile-settings-grid,
   .room-session-grid,
-  .room-frame {
+  .room-frame,
+  .source-preview-card,
+  .visibility-cards {
     display: flex;
     flex-direction: column;
   }

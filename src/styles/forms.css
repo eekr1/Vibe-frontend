@@ -28,10 +28,16 @@
   color: var(--color-text-disabled);
   opacity: 0.7;
 }
-.auth-layout {
+
+.identity-layout {
   display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(260px, 0.82fr) minmax(0, 1.18fr);
+}
+
+.auth-layout {
+  align-items: start;
   min-height: 32rem;
-  place-items: center;
 }
 
 .auth-panel,
@@ -44,16 +50,86 @@
   padding: clamp(1.2rem, 4vw, 2rem);
 }
 
+.auth-context-panel,
+.identity-form-panel,
+.launch-form,
+.launch-summary {
+  align-self: start;
+}
+
+.auth-context-panel h2,
 .auth-panel h2,
 .auth-gate h2,
-.room-form h2 {
+.room-form h2,
+.profile-settings-form h2 {
   font-size: var(--font-size-heading);
-  line-height: 1.05;
-  margin: 0 0 1.2rem;
+  line-height: var(--line-height-tight);
+  margin: 0;
+}
+
+.auth-context-panel p,
+.form-intro,
+.create-room-aside p,
+.profile-identity-card p {
+  color: var(--color-text-muted);
+  line-height: var(--line-height-copy);
+}
+
+.identity-step-list {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+
+.identity-step-list span {
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-label);
+  font-weight: 800;
+  padding: var(--space-2) var(--space-3);
+}
+
+.auth-mode-header,
+.form-section-heading {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.auth-mode-switch {
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  width: fit-content;
+}
+
+.auth-mode-switch button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  min-height: 2rem;
+  padding: var(--space-1) var(--space-3);
+}
+
+.auth-mode-switch button.is-active,
+.auth-mode-switch button:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border-subtle);
+  color: var(--color-text);
 }
 
 .auth-panel label,
 .room-form label,
+.profile-settings-form label,
 .private-invite-card,
 .private-entry label {
   color: var(--color-text-muted);
@@ -65,7 +141,7 @@
 
 .field-hint {
   color: var(--color-text-muted);
-  font-size: 0.82rem;
+  font-size: var(--font-size-label);
   font-weight: 600;
   line-height: 1.45;
 }
@@ -73,6 +149,7 @@
 .auth-panel input,
 .room-form input,
 .room-form select,
+.profile-settings-form input,
 .private-invite-card input,
 .private-entry input {
   background: var(--color-field);
@@ -87,6 +164,7 @@
 .auth-panel input:focus,
 .room-form input:focus,
 .room-form select:focus,
+.profile-settings-form input:focus,
 .private-invite-card input:focus,
 .private-entry input:focus {
   border-color: var(--color-accent-soft);
@@ -116,25 +194,37 @@
 
 .auth-gate {
   margin: 0 auto;
-  max-width: 460px;
-  width: min(100%, 460px);
+  max-width: 520px;
+  width: min(100%, 520px);
 }
 
 .auth-panel {
-  max-width: 460px;
-  width: min(100%, 460px);
+  width: 100%;
+}
+
+.auth-secondary-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+  margin-top: var(--space-3);
 }
 
 .create-room-layout {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  gap: var(--space-5);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
 }
 
-.form-intro,
-.create-room-aside p {
-  color: var(--color-text-muted);
-  line-height: 1.65;
+.launch-section {
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
 }
 
 .form-grid {
@@ -143,39 +233,100 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.visibility-switch {
+.source-preview-card {
+  align-items: center;
+  background: var(--color-bg-glass);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(8rem, 0.35fr) minmax(0, 1fr);
+  padding: var(--space-3);
+}
+
+.source-preview-card.valid {
+  border-color: var(--color-success-border-soft);
+}
+
+.source-preview-card.warning {
+  border-color: var(--color-warning-border);
+}
+
+.source-preview-card h3,
+.create-room-aside h3,
+.empty-state h3,
+.private-invite-card h3 {
+  margin: 0;
+}
+
+.source-preview-card p {
+  color: var(--color-text-muted);
+  line-height: 1.55;
+  margin: var(--space-2) 0 0;
+}
+
+.source-preview-media {
+  align-items: center;
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(135deg, var(--color-danger-ambient-strong), var(--color-warning-surface-strong));
+  border-radius: var(--radius-sm);
+  color: var(--color-accent-soft);
   display: flex;
-  gap: 1rem;
+  font-weight: 900;
+  justify-content: center;
+}
+
+.visibility-switch {
+  border: 0;
+  display: grid;
+  gap: var(--space-3);
   margin: 0 0 0.95rem;
-  padding: 0.85rem;
+  padding: 0;
 }
 
 .visibility-switch legend {
   color: var(--color-accent-soft);
   font-weight: 800;
-  padding: 0 0.35rem;
+  margin-bottom: var(--space-2);
+  padding: 0;
 }
 
-.visibility-switch label {
-  align-items: center;
-  display: inline-flex;
-  gap: 0.45rem;
+.visibility-cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.visibility-cards label {
+  align-items: flex-start;
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-3);
   margin: 0;
+  padding: var(--space-3);
 }
 
-.visibility-switch input {
+.visibility-cards label.is-selected {
+  background: var(--color-warning-surface);
+  border-color: var(--color-warning-border);
+}
+
+.visibility-cards input {
   accent-color: var(--color-accent);
+  margin-top: 0.2rem;
   min-height: auto;
   width: auto;
 }
 
-.create-room-aside h3,
-.empty-state h3,
-.private-invite-card h3,
-.room-card h3 {
-  margin: 0;
+.visibility-cards span {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.visibility-cards small {
+  color: var(--color-text-muted);
+  line-height: 1.4;
 }
 
 .private-invite-card {
@@ -193,5 +344,9 @@
   margin: 0;
 }
 
-
-
+.launch-action-row {
+  align-items: center;
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: minmax(0, 0.45fr) minmax(0, 1fr);
+}

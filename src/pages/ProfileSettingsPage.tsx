@@ -89,8 +89,10 @@ export function ProfileSettingsPage({ onNavigate }: ProfileSettingsPageProps) {
   if (!isCheckingSession && !currentUser) {
     return (
       <AuthRequiredGate
+        body="Profile settings control the name and avatar people see in rooms, chat, and reports."
         onLogin={() => onNavigate(`/auth?mode=login&returnTo=${encodeURIComponent(returnTo)}`)}
         onSignup={() => onNavigate(`/auth?mode=signup&returnTo=${encodeURIComponent(returnTo)}`)}
+        title="Log in to manage your room identity."
       />
     );
   }
@@ -111,26 +113,26 @@ export function ProfileSettingsPage({ onNavigate }: ProfileSettingsPageProps) {
   }
 
   return (
-    <section className="profile-settings-grid">
-      <div className="surface-panel">
-        <p className="eyebrow">Member continuity</p>
-        <h2>Your profile</h2>
-        <p>
-          Keep your room identity recognizable. Your display name and avatar are what
-          people notice first inside rooms; your username stays as your stable account handle.
-        </p>
-        <div className="profile-preview-card">
+    <section className="profile-page identity-layout">
+      <article className="surface-panel profile-identity-card">
+        <p className="eyebrow">Room identity</p>
+        <div className="profile-hero-card">
           {avatarUrl.trim() ? (
             <img alt="" src={avatarUrl.trim()} />
           ) : (
             <span className="profile-avatar-fallback">{avatarInitial}</span>
           )}
           <div>
-            <strong>{displayName || currentUser.displayName}</strong>
-            <span>@{currentUser.username}</span>
+            <h2>{displayName || currentUser.displayName}</h2>
+            <p>@{currentUser.username}</p>
           </div>
         </div>
-        <dl className="room-facts">
+        <p>
+          This is the identity people recognize inside live rooms. Keep it readable, stable,
+          and ready for future public profile surfaces without adding social controls yet.
+        </p>
+
+        <dl className="room-facts profile-account-facts">
           <div>
             <dt>Username</dt>
             <dd>{currentUser.username}</dd>
@@ -148,9 +150,18 @@ export function ProfileSettingsPage({ onNavigate }: ProfileSettingsPageProps) {
             <dd>{currentUser.role}</dd>
           </div>
         </dl>
-      </div>
+      </article>
 
-      <form className="surface-panel profile-settings-form" onSubmit={handleSubmit}>
+      <form className="surface-panel profile-settings-form identity-form-panel" onSubmit={handleSubmit}>
+        <div className="form-section-heading">
+          <p className="eyebrow">Editable profile</p>
+          <h2>Update what rooms show.</h2>
+          <p className="form-intro">
+            Your display name and avatar are visible in rooms, chat, reports, and moderation context.
+            Your username and system account details stay stable here.
+          </p>
+        </div>
+
         <label>
           Display name
           <span className="field-hint">Shown in rooms, chat, reports, and moderation context.</span>
@@ -178,7 +189,7 @@ export function ProfileSettingsPage({ onNavigate }: ProfileSettingsPageProps) {
           <p className="state-banner">Avatar URL is optional. Leaving it blank keeps your profile text-only.</p>
         ) : null}
         <button className="primary-action" disabled={isSaving || !displayName.trim()} type="submit">
-          {isSaving ? "Saving..." : "Save profile settings"}
+          {isSaving ? "Saving profile..." : "Save profile"}
         </button>
       </form>
     </section>
