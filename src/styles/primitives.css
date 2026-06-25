@@ -36,12 +36,6 @@
   width: 0.55rem;
 }
 
-.shell-grid {
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: minmax(0, 1.25fr) minmax(220px, 0.65fr);
-}
-
 .surface-panel {
   background: var(--color-surface-glass);
   border: 1px solid var(--color-border-subtle);
@@ -49,21 +43,11 @@
   padding: clamp(1rem, 3vw, 1.5rem);
 }
 
-.primary-panel {
-  grid-row: span 2;
-  min-height: 18rem;
-}
-
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.7rem;
   margin-top: 1.25rem;
-}
-
-.live-moment-panel {
-  display: grid;
-  gap: 0.65rem;
 }
 
 .live-moment-list {

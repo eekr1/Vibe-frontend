@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { ApiClientError } from "../lib/api";
 import {
   listCategories,
@@ -18,6 +18,36 @@ const sortOptions: Array<{ label: string; value: DiscoverSort }> = [
   { label: "Nearly full", value: "nearly-full" }
 ];
 
+function getInitials(displayName: string) {
+  return displayName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "V";
+}
+
+function getEmptyStateCopy(search: string, selectedCategory: RoomCategory | undefined) {
+  if (search.trim()) {
+    return {
+      body: "Try a shorter search, clear the filters, or open the room others will notice first.",
+      title: "No rooms match that search."
+    };
+  }
+
+  if (selectedCategory) {
+    return {
+      body: `No public rooms are live in ${selectedCategory.name} right now. Browse all rooms or start one in this category.`,
+      title: `No live ${selectedCategory.name} rooms yet.`
+    };
+  }
+
+  return {
+    body: "Public rooms appear here while they are live. Create one when you want to host the next shared moment.",
+    title: "No public rooms are live right now."
+  };
+}
+
 export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
   const [categories, setCategories] = useState<RoomCategory[]>([]);
   const [categorySlug, setCategorySlug] = useState("");
@@ -29,6 +59,12 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<DiscoverSort>("newest");
   const deferredSearch = useDeferredValue(search);
+  const selectedCategory = useMemo(
+    () => categories.find((category) => category.slug === categorySlug),
+    [categories, categorySlug]
+  );
+  const activeFilterCount = Number(Boolean(search.trim())) + Number(Boolean(categorySlug));
+  const emptyStateCopy = getEmptyStateCopy(search, selectedCategory);
 
   useEffect(() => {
     let isMounted = true;
@@ -131,131 +167,163 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
     }
   }
 
+  function clearFilters() {
+    setCategorySlug("");
+    setSearch("");
+  }
+
   return (
-    <section className="discover-layout">
-      <div className="surface-panel wide-panel">
-        <p className="eyebrow">Discover</p>
-        <h2>See what is live right now.</h2>
-        <p>
-          Browse open rooms, follow the energy, and enter the shared moment when something pulls you in.
-          Guests can look around freely; joining keeps identity and room safety clear.
-        </p>
-        <div className="action-row discover-intro-actions">
+    <section className="discover-page">
+      <div className="discover-hero surface-panel">
+        <div>
+          <p className="eyebrow">Live public rooms</p>
+          <h2>Find the room that feels alive right now.</h2>
+          <p>
+            Browse public sessions by title, host, or category. Guests can scan the room surface freely;
+            entering a room keeps identity and safety clear.
+          </p>
+        </div>
+        <div className="discover-hero-actions">
           <button className="primary-action compact" onClick={() => onNavigate("/create-room")} type="button">
-            Create a room
+            Create room
           </button>
-          <button className="secondary-action compact" onClick={() => setSearch("")} type="button">
-            Clear search
+          <button className="secondary-action compact" disabled={activeFilterCount === 0} onClick={clearFilters} type="button">
+            Clear filters
           </button>
         </div>
+      </div>
 
-        <div className="discover-controls">
-          <label>
-            Search
-            <input
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Find a room, host, or category"
-              type="search"
-              value={search}
-            />
-          </label>
+      <div className="discover-control-panel surface-panel">
+        <label className="discover-search-field">
+          <span>Search rooms</span>
+          <input
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Find a room, host, or category"
+            type="search"
+            value={search}
+          />
+        </label>
 
-          <label>
-            Category
-            <select onChange={(event) => setCategorySlug(event.target.value)} value={categorySlug}>
-              <option value="">All categories</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.slug}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
+        <label>
+          <span>Category</span>
+          <select onChange={(event) => setCategorySlug(event.target.value)} value={categorySlug}>
+            <option value="">All categories</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.slug}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <label>
-            Sort
-            <select onChange={(event) => setSort(event.target.value as DiscoverSort)} value={sort}>
-              {sortOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+        <label>
+          <span>Sort</span>
+          <select onChange={(event) => setSort(event.target.value as DiscoverSort)} value={sort}>
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="discover-result-bar" aria-live="polite">
+        <span>{isLoading ? "Looking for rooms" : `${rooms.length} ${rooms.length === 1 ? "room" : "rooms"} shown`}</span>
+        <span>{selectedCategory?.name ?? "All categories"}</span>
+        <span>{sortOptions.find((option) => option.value === sort)?.label}</span>
+        {activeFilterCount > 0 ? <span>{activeFilterCount} active filter{activeFilterCount > 1 ? "s" : ""}</span> : null}
+      </div>
+
+      {isLoading ? (
+        <div className="room-card-grid" aria-label="Loading public rooms">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <article className="room-card room-card-skeleton" key={index}>
+              <div className="skeleton-block room-card-skeleton-media" />
+              <div className="room-card-body">
+                <div className="skeleton-block" />
+                <div className="skeleton-block short" />
+                <div className="skeleton-block" />
+              </div>
+            </article>
+          ))}
         </div>
-
-        <div className="discover-live-strip">
-          <span>Live + public only</span>
-          <span>{rooms.length} rooms shown</span>
-          <span>{sortOptions.find((option) => option.value === sort)?.label}</span>
+      ) : error ? (
+        <div className="empty-state danger discover-state-panel">
+          <h3>Discover could not refresh.</h3>
+          <p className="form-error">{error}</p>
+          <button className="secondary-action" onClick={() => window.location.reload()} type="button">
+            Try again
+          </button>
         </div>
-
-        {isLoading ? (
-          <div className="inline-loading">
-            <span className="loader" />
-            Looking for live rooms
-          </div>
-        ) : error ? (
-          <div className="empty-state danger">
-            <h3>Discover could not refresh.</h3>
-            <p className="form-error">{error}</p>
-            <button className="secondary-action" onClick={() => window.location.reload()} type="button">
-              Try again
-            </button>
-          </div>
-        ) : rooms.length > 0 ? (
-          <>
-            <div className="room-card-grid">
-              {rooms.map((room) => (
-                <article className="room-card" key={room.id}>
+      ) : rooms.length > 0 ? (
+        <>
+          <div className="room-card-grid">
+            {rooms.map((room) => (
+              <button
+                className="room-card"
+                key={room.id}
+                onClick={() => onNavigate(`/room?roomId=${room.id}`)}
+                type="button"
+              >
+                <span className="room-card-media">
                   {room.source.thumbnailUrl ? (
                     <img alt={room.card?.thumbnailAlt ?? ""} src={room.source.thumbnailUrl} />
                   ) : (
-                    <div className="room-card-placeholder">YouTube</div>
+                    <span className="room-card-placeholder">YouTube</span>
                   )}
-                  <div>
-                    <div className="room-card-meta">
-                      <p className="eyebrow">{room.category.name}</p>
-                      {room.card?.isNearlyFull ? <span>Nearly full</span> : null}
-                    </div>
-                    <h3>{room.title}</h3>
-                    <p>
-                      {room.host.displayName} is hosting | {room.card?.capacityLabel ??
-                        `${room.activeParticipantCount}/${room.participantLimit}`}
-                    </p>
-                    <button
-                      className="secondary-action compact"
-                      onClick={() => onNavigate(`/room?roomId=${room.id}`)}
-                      type="button"
-                    >
-                      Join live room
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
+                  <span className="room-live-badge">Live</span>
+                </span>
+                <span className="room-card-body">
+                  <span className="room-card-meta">
+                    <span>{room.category.name}</span>
+                    {room.card?.isNearlyFull ? <span>Nearly full</span> : null}
+                  </span>
+                  <span className="room-card-title">{room.title}</span>
+                  <span className="room-card-host">
+                    {room.host.avatarUrl ? (
+                      <img alt="" src={room.host.avatarUrl} />
+                    ) : (
+                      <span className="room-host-avatar" aria-hidden="true">{getInitials(room.host.displayName)}</span>
+                    )}
+                    <span>{room.host.displayName} is hosting</span>
+                  </span>
+                  <span className="room-card-footer">
+                    <span>{room.card?.capacityLabel ?? `${room.activeParticipantCount}/${room.participantLimit}`} inside</span>
+                    <span>Join room</span>
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
 
-            {nextCursor ? (
-              <button
-                className="secondary-action discover-load-more"
-                disabled={isLoadingMore}
-                onClick={() => void handleLoadMore()}
-                type="button"
-              >
-                {isLoadingMore ? "Loading more..." : "Load more rooms"}
+          {nextCursor ? (
+            <button
+              className="secondary-action discover-load-more"
+              disabled={isLoadingMore}
+              onClick={() => void handleLoadMore()}
+              type="button"
+            >
+              {isLoadingMore ? "Loading more rooms..." : "Load more rooms"}
+            </button>
+          ) : null}
+        </>
+      ) : (
+        <div className="empty-state discover-state-panel">
+          <h3>{emptyStateCopy.title}</h3>
+          <p>{emptyStateCopy.body}</p>
+          <div className="action-row">
+            {activeFilterCount > 0 ? (
+              <button className="secondary-action compact" onClick={clearFilters} type="button">
+                Clear filters
               </button>
             ) : null}
-          </>
-        ) : (
-          <div className="empty-state">
-            <h3>No live rooms match this view yet.</h3>
-            <p>Clear the filters, try a wider search, or open the room others will notice first.</p>
-            <button className="primary-action" onClick={() => onNavigate("/create-room")} type="button">
+            <button className="primary-action compact" onClick={() => onNavigate("/create-room")} type="button">
               Create room
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 }

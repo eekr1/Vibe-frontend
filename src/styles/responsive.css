@@ -21,17 +21,21 @@
   .admin-list-grid,
   .admin-section-grid,
   .create-room-layout,
-  .discover-controls,
+  .discover-control-panel,
+  .discover-hero,
+  .home-hero,
+  .home-split-band,
+  .home-story-grid,
   .playback-controls,
   .profile-settings-grid,
   .room-session-grid,
-  .room-frame,
-  .shell-grid {
+  .room-frame {
     display: flex;
     flex-direction: column;
   }
 
   .brand,
+  .discover-hero-actions,
   .nav,
   .shell-actions,
   .account-strip,
@@ -45,6 +49,7 @@
 
   .shell-actions,
   .account-strip,
+  .discover-hero-actions,
   .trust-footer-links {
     flex-wrap: wrap;
   }
@@ -53,6 +58,7 @@
     max-width: 100%;
   }
 
+  .discover-load-more,
   .shell-create-action {
     width: fit-content;
   }

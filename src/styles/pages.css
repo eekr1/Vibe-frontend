@@ -1,24 +1,199 @@
-.discover-layout {
+.home-page,
+.discover-page {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-5);
 }
 
-.discover-controls {
+.home-hero {
+  align-items: stretch;
   display: grid;
-  gap: 0.85rem;
+  gap: var(--space-6);
+  grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.85fr);
+  overflow: hidden;
+  position: relative;
+}
+
+.home-hero::before {
+  background: radial-gradient(circle at top left, var(--ambient-ember), transparent 58%);
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.home-hero > * {
+  position: relative;
+}
+
+.home-hero-copy {
+  align-content: center;
+  display: grid;
+  gap: var(--space-4);
+  min-height: 22rem;
+}
+
+.home-hero h2 {
+  font-size: var(--font-size-display);
+  line-height: var(--line-height-tight);
+  margin: 0;
+  max-width: 780px;
+}
+
+.home-hero p {
+  max-width: 680px;
+}
+
+.home-room-preview {
+  align-self: center;
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-surface);
+  overflow: hidden;
+}
+
+.preview-player {
+  align-items: center;
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(135deg, var(--color-danger-ambient-strong), var(--color-warning-surface-strong));
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.preview-live-pill,
+.room-live-badge {
+  background: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-accent-soft);
+  font-size: var(--font-size-metadata);
+  font-weight: 850;
+  padding: var(--space-1) var(--space-3);
+}
+
+.preview-live-pill {
+  left: var(--space-4);
+  position: absolute;
+  top: var(--space-4);
+}
+
+.preview-play-mark {
+  align-items: center;
+  background: var(--color-bg-glass-strong);
+  border: 1px solid var(--color-border-inverse);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  display: inline-flex;
+  font-weight: 850;
+  min-height: 3rem;
+  padding: 0 var(--space-5);
+}
+
+.preview-room-body {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+}
+
+.preview-room-body h3,
+.home-story-card h3,
+.room-card-title {
+  color: var(--color-text);
+  margin: 0;
+}
+
+.preview-room-meta,
+.discover-result-bar,
+.room-card-meta,
+.room-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.preview-room-meta span,
+.discover-result-bar span,
+.room-card-meta span,
+.room-card-footer span:last-child {
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-metadata);
+  font-weight: 800;
+  padding: 0.35rem 0.55rem;
+}
+
+.home-story-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.home-story-card {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.story-index {
+  color: var(--color-accent-soft);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-metadata);
+  font-weight: 850;
+}
+
+.home-split-band {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.7fr);
+}
+
+.home-callout,
+.home-safety-note {
+  align-content: center;
+}
+
+.discover-hero {
+  align-items: end;
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.discover-hero h2 {
+  font-size: var(--font-size-heading);
+  line-height: var(--line-height-tight);
+  margin: 0;
+}
+
+.discover-hero p {
+  max-width: 760px;
+}
+
+.discover-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.discover-control-panel {
+  align-items: end;
+  display: grid;
+  gap: var(--space-3);
   grid-template-columns: minmax(0, 1.2fr) minmax(180px, 0.7fr) minmax(160px, 0.55fr);
-  margin-top: 1.2rem;
 }
 
-.discover-controls label {
+.discover-control-panel label {
   color: var(--color-text-muted);
   display: grid;
   font-weight: 800;
-  gap: 0.45rem;
+  gap: var(--space-2);
 }
 
-.discover-controls input,
-.discover-controls select {
+.discover-control-panel input,
+.discover-control-panel select {
   background: var(--color-field);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
@@ -27,56 +202,61 @@
   padding: 0.7rem 0.85rem;
 }
 
-.discover-controls input:focus,
-.discover-controls select:focus {
+.discover-control-panel input:focus,
+.discover-control-panel select:focus {
   border-color: var(--color-accent-soft);
   outline: var(--focus-outline);
   outline-offset: var(--focus-offset);
 }
 
-.discover-intro-actions {
-  margin-top: 1rem;
+.discover-result-bar {
+  align-items: center;
 }
 
-.discover-live-strip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-  margin-top: 0.85rem;
-}
-
-.discover-live-strip span,
-.room-card-meta span {
+.discover-result-bar span:first-child {
   background: var(--color-warning-surface);
-  border: 1px solid var(--color-warning-border);
-  border-radius: var(--radius-pill);
+  border-color: var(--color-warning-border);
   color: var(--color-accent-soft);
-  font-size: 0.78rem;
-  font-weight: 800;
-  padding: 0.35rem 0.55rem;
 }
 
 .room-card-grid {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  margin-top: 1rem;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
 
 .room-card {
   background: var(--color-bg-soft);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  font: inherit;
   overflow: hidden;
+  padding: 0;
+  text-align: left;
 }
 
-.room-card img,
-.room-card-placeholder {
+.room-card:hover {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  transform: translateY(-2px);
+}
+
+.room-card-media {
+  display: block;
+  position: relative;
+}
+
+.room-card-media img,
+.room-card-placeholder,
+.room-card-skeleton-media {
   aspect-ratio: 16 / 9;
   width: 100%;
 }
 
-.room-card img {
+.room-card-media img {
   display: block;
   object-fit: cover;
 }
@@ -90,25 +270,102 @@
   justify-content: center;
 }
 
-.room-card > div {
-  padding: 1rem;
+.room-live-badge {
+  left: var(--space-3);
+  position: absolute;
+  top: var(--space-3);
+}
+
+.room-card-body {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
 }
 
 .room-card-meta {
-  align-items: center;
-  display: flex;
-  gap: 0.6rem;
   justify-content: space-between;
 }
 
-.room-card p {
-  margin: 0.55rem 0 0.9rem;
+.room-card-meta span:last-child,
+.room-card-footer span:last-child {
+  background: var(--color-warning-surface);
+  border-color: var(--color-warning-border);
+  color: var(--color-accent-soft);
+}
+
+.room-card-title {
+  display: -webkit-box;
+  font-size: 1.05rem;
+  font-weight: 850;
+  line-height: 1.25;
+  min-height: 2.6rem;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.room-card-host {
+  align-items: center;
+  color: var(--color-text-muted);
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.room-card-host img,
+.room-host-avatar {
+  border-radius: var(--radius-pill);
+  flex: 0 0 auto;
+  height: 1.9rem;
+  width: 1.9rem;
+}
+
+.room-card-host img {
+  object-fit: cover;
+}
+
+.room-host-avatar {
+  align-items: center;
+  background: var(--color-danger-surface-avatar);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-accent-soft);
+  display: inline-flex;
+  font-size: var(--font-size-metadata);
+  font-weight: 900;
+  justify-content: center;
+}
+
+.room-card-footer {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.room-card-skeleton {
+  cursor: default;
+}
+
+.room-card-skeleton:hover {
+  background: var(--color-bg-soft);
+  border-color: var(--color-border-subtle);
+  transform: none;
+}
+
+.room-card-skeleton .skeleton-block {
+  min-height: 1rem;
+}
+
+.room-card-skeleton .skeleton-block.short {
+  max-width: 55%;
 }
 
 .discover-load-more {
-  margin-top: 1rem;
+  margin-top: var(--space-2);
+  width: fit-content;
 }
 
+.discover-state-panel {
+  margin-top: 0;
+}
 .create-debug-list {
   display: grid;
   gap: 0.6rem;
