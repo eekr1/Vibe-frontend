@@ -3,17 +3,22 @@
 }
 
 .topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem clamp(1rem, 4vw, 3rem);
-  border-bottom: 1px solid var(--color-border-subtle);
   background: var(--color-app-chrome);
   backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--color-border-subtle);
   position: sticky;
   top: 0;
   z-index: var(--z-sticky);
+}
+
+.topbar-inner {
+  align-items: center;
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(11rem, 1fr) auto minmax(18rem, 1fr);
+  margin: 0 auto;
+  max-width: var(--container-page);
+  padding: var(--space-3) var(--page-gutter);
 }
 
 .brand {
@@ -23,9 +28,12 @@
   color: var(--color-text);
   cursor: pointer;
   display: inline-flex;
-  font-weight: 800;
-  gap: 0.7rem;
+  font: inherit;
+  gap: var(--space-3);
+  justify-self: start;
+  min-width: 0;
   padding: 0;
+  text-align: left;
 }
 
 .brand-mark {
@@ -34,47 +42,139 @@
   border-radius: var(--radius-sm);
   color: var(--color-accent-contrast);
   display: inline-flex;
-  height: 2rem;
+  flex: 0 0 auto;
+  font-weight: 900;
+  height: 2.1rem;
   justify-content: center;
-  width: 2rem;
+  width: 2.1rem;
+}
+
+.brand-copy,
+.account-copy,
+.trust-footer-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.brand-name {
+  font-weight: 850;
+  line-height: 1.1;
+}
+
+.brand-subtitle,
+.account-meta,
+.trust-footer-copy span {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-metadata);
+  line-height: 1.35;
 }
 
 .nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  justify-content: flex-end;
-}
-
-.account-strip {
   align-items: center;
-  display: inline-flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-}
-
-.account-chip {
+  background: var(--color-bg-glass);
   border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-sm);
-  color: var(--color-text-muted);
+  border-radius: var(--radius-pill);
   display: inline-flex;
-  padding: 0.5rem 0.65rem;
+  gap: var(--space-1);
+  justify-content: center;
+  padding: var(--space-1);
 }
 
 .nav-item {
   background: transparent;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   color: var(--color-text-muted);
   cursor: pointer;
-  padding: 0.55rem 0.75rem;
+  font: inherit;
+  min-height: 2.15rem;
+  padding: var(--space-2) var(--space-4);
 }
 
 .nav-item:hover,
 .nav-item.is-active {
+  background: var(--color-surface);
   border-color: var(--color-border-subtle);
   color: var(--color-text);
+}
+
+.nav-item.is-active {
+  box-shadow: inset 0 0 0 1px var(--color-border-inverse);
+}
+
+.shell-actions {
+  align-items: center;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.account-strip {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.account-chip,
+.account-button {
+  align-items: center;
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  display: inline-flex;
+  gap: var(--space-2);
+  min-height: 2.35rem;
+  min-width: 0;
+  padding: var(--space-1) var(--space-3);
+}
+
+.account-chip.is-loading {
+  color: var(--color-text-disabled);
+  min-width: 8.5rem;
+}
+
+.account-button {
+  cursor: pointer;
+  font: inherit;
+  max-width: 15rem;
+}
+
+.account-button:hover {
   background: var(--color-surface);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.account-avatar {
+  align-items: center;
+  aspect-ratio: 1;
+  background: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-accent-soft);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: var(--font-size-metadata);
+  font-weight: 850;
+  height: 1.75rem;
+  justify-content: center;
+  object-fit: cover;
+  width: 1.75rem;
+}
+
+.account-name {
+  color: var(--color-text);
+  font-size: var(--font-size-label);
+  font-weight: 750;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .primary-action,
@@ -83,6 +183,7 @@
 .text-action {
   border-radius: var(--radius-sm);
   cursor: pointer;
+  font: inherit;
   min-height: 2.6rem;
   padding: 0.7rem 0.95rem;
 }
@@ -131,6 +232,10 @@
   padding: 0.45rem 0.65rem;
 }
 
+.shell-create-action {
+  white-space: nowrap;
+}
+
 .full-width {
   width: 100%;
 }
@@ -147,33 +252,48 @@
   padding: var(--page-gutter);
 }
 
-.runtime-band {
-  align-items: flex-end;
-  display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
+.page-masthead {
+  margin-bottom: var(--space-6);
+  max-width: var(--container-content);
 }
 
-.runtime-band h1,
+.page-masthead h1,
 .surface-panel h2,
 .room-side h2,
 .error-screen h1 {
-  line-height: 1.05;
+  line-height: var(--line-height-tight);
   margin: 0;
 }
 
-.runtime-band h1 {
-  font-size: var(--font-size-display);
+.page-masthead h1 {
+  font-size: var(--font-size-heading);
   max-width: 760px;
 }
 
 .trust-footer {
+  border-top: 1px solid var(--color-border-subtle);
+  margin-top: var(--space-8);
+  padding: var(--space-6) var(--page-gutter) var(--space-8);
+}
+
+.trust-footer-inner {
+  align-items: center;
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: var(--container-page);
+}
+
+.trust-footer-copy strong {
+  color: var(--color-text);
+}
+
+.trust-footer-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: center;
-  padding: 1.5rem 2rem 2.5rem;
+  gap: var(--space-3);
+  justify-content: flex-end;
 }
 
 .trust-footer button {
@@ -182,6 +302,7 @@
   color: var(--color-text-muted);
   cursor: pointer;
   font: inherit;
+  padding: 0;
   text-decoration: underline;
   text-underline-offset: 0.25rem;
 }
@@ -189,8 +310,6 @@
 .trust-footer button:hover {
   color: var(--color-text);
 }
-
-
 
 .primary-action:not(:disabled):hover {
   background: var(--color-accent-hover);
@@ -219,7 +338,7 @@
 .secondary-action:not(:disabled):active,
 .danger-action:not(:disabled):active,
 .text-action:not(:disabled):active,
-.nav-item:not(:disabled):active {
+.nav-item:not(:disabled):active,
+.account-button:not(:disabled):active {
   transform: translateY(1px);
 }
-

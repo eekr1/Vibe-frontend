@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "./components/AppShell";
-import { routes } from "./lib/routes";
+import { notFoundRoute, routes } from "./lib/routes";
 
 export function App() {
   const [locationPath, setLocationPath] = useState(
@@ -9,7 +9,7 @@ export function App() {
   const path = new URL(locationPath, window.location.origin).pathname;
 
   const activeRoute = useMemo(() => {
-    return routes.find((route) => route.path === path) ?? routes[0];
+    return routes.find((route) => route.path === path) ?? notFoundRoute;
   }, [path]);
 
   function navigate(nextPath: string) {
@@ -24,6 +24,10 @@ export function App() {
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
+
+  useEffect(() => {
+    document.title = `${activeRoute.title} | Vibehall`;
+  }, [activeRoute.title]);
 
   return <AppShell activeRoute={activeRoute} onNavigate={navigate} routes={routes} />;
 }

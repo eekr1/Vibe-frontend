@@ -5,17 +5,17 @@
     --font-size-title: 1.35rem;
   }
 
-  .topbar,
+  .topbar-inner,
   .admin-toolbar,
   .report-panel-header,
-  .runtime-band,
   .room-hero,
-  .room-frame {
+  .room-frame,
+  .trust-footer-inner {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .runtime-band,
+  .topbar-inner,
   .admin-console,
   .admin-detail-grid,
   .admin-list-grid,
@@ -31,12 +31,30 @@
     flex-direction: column;
   }
 
-  .nav {
+  .brand,
+  .nav,
+  .shell-actions,
+  .account-strip,
+  .trust-footer-links {
     justify-content: flex-start;
   }
 
-  .account-strip {
-    justify-content: flex-start;
+  .nav {
+    width: fit-content;
+  }
+
+  .shell-actions,
+  .account-strip,
+  .trust-footer-links {
+    flex-wrap: wrap;
+  }
+
+  .account-button {
+    max-width: 100%;
+  }
+
+  .shell-create-action {
+    width: fit-content;
   }
 
   .runtime-status {
@@ -58,6 +76,3 @@
     justify-content: flex-start;
   }
 }
-
-
-

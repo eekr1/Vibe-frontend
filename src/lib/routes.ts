@@ -4,6 +4,7 @@ import { AuthPage } from "../pages/AuthPage";
 import { CreateRoomPage } from "../pages/CreateRoomPage";
 import { DiscoverShellPage } from "../pages/DiscoverShellPage";
 import { HomeShellPage } from "../pages/HomeShellPage";
+import { NotFoundPage } from "../pages/NotFoundPage";
 import {
   CommunityGuidelinesPage,
   PrivacyPage,
@@ -26,17 +27,19 @@ export const routes: RouteDefinition[] = [
     component: HomeShellPage,
     label: "Home",
     path: "/",
+    showInPrimaryNav: true,
     title: "Live rooms for shared YouTube moments"
   },
   {
     component: DiscoverShellPage,
     label: "Discover",
     path: "/discover",
+    showInPrimaryNav: true,
     title: "Discover live rooms"
   },
   {
     component: CreateRoomPage,
-    label: "Create",
+    label: "Create room",
     path: "/create-room",
     title: "Create a live room"
   },
@@ -48,7 +51,7 @@ export const routes: RouteDefinition[] = [
   },
   {
     component: AuthPage,
-    label: "Auth",
+    label: "Account",
     path: "/auth",
     showInPrimaryNav: false,
     title: "Log in or sign up"
@@ -102,3 +105,11 @@ export const routes: RouteDefinition[] = [
     title: "Support"
   }
 ];
+
+export const notFoundRoute: RouteDefinition = {
+  component: NotFoundPage,
+  label: "Not found",
+  path: "*",
+  showInPrimaryNav: false,
+  title: "Page not found"
+};
