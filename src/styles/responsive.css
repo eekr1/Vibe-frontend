@@ -1,0 +1,63 @@
+@media (max-width: 760px) {
+  :root {
+    --font-size-display: 2.5rem;
+    --font-size-heading: 1.8rem;
+    --font-size-title: 1.35rem;
+  }
+
+  .topbar,
+  .admin-toolbar,
+  .report-panel-header,
+  .runtime-band,
+  .room-hero,
+  .room-frame {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .runtime-band,
+  .admin-console,
+  .admin-detail-grid,
+  .admin-list-grid,
+  .admin-section-grid,
+  .create-room-layout,
+  .discover-controls,
+  .playback-controls,
+  .profile-settings-grid,
+  .room-session-grid,
+  .room-frame,
+  .shell-grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .nav {
+    justify-content: flex-start;
+  }
+
+  .account-strip {
+    justify-content: flex-start;
+  }
+
+  .runtime-status {
+    width: fit-content;
+  }
+
+  .admin-sidebar {
+    position: static;
+  }
+
+  .admin-row,
+  .message-form,
+  .presence-list li {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .participant-actions {
+    justify-content: flex-start;
+  }
+}
+
+
+

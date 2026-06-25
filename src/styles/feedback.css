@@ -1,0 +1,87 @@
+.inline-loading {
+  align-items: center;
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  display: inline-flex;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  padding: 0.8rem 0.95rem;
+}
+
+.empty-state {
+  background: var(--color-bg-glass);
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  margin-top: 1rem;
+  padding: 1rem;
+}
+
+.empty-state p {
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.empty-state.danger {
+  background: var(--color-danger-surface-soft);
+  border-color: var(--color-danger-border);
+}
+
+.empty-state.danger h3 {
+  color: var(--color-danger-text);
+}
+
+.loading-state,
+.error-screen {
+  align-items: center;
+  display: flex;
+  min-height: 100vh;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.loading-state {
+  gap: 0.8rem;
+}
+
+.loader {
+  animation: spin 0.9s linear infinite;
+  border: 2px solid var(--color-border-subtle);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.error-screen {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+
+.skeleton-block {
+  background: linear-gradient(90deg, var(--color-bg-glass), var(--color-surface-interactive), var(--color-bg-glass));
+  background-size: 220% 100%;
+  border-radius: var(--radius-sm);
+  min-height: 1rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-block {
+    animation: skeleton-sheen 1.2s var(--motion-ease) infinite;
+  }
+}
+
+@keyframes skeleton-sheen {
+  to {
+    background-position: -220% 0;
+  }
+}

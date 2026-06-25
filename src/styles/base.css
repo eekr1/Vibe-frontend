@@ -1,0 +1,70 @@
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--color-bg);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, var(--ambient-ember), transparent 34rem),
+    linear-gradient(135deg, var(--color-bg) 0%, var(--color-surface) 55%, var(--color-bg-soft) 100%);
+  color: var(--color-text);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-body);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  touch-action: manipulation;
+}
+
+img {
+  max-width: 100%;
+}
+
+a {
+  color: var(--color-accent-soft);
+}
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+  box-shadow: var(--shadow-focus);
+}
+
+:where(button, input, select, textarea):disabled {
+  cursor: not-allowed;
+}
+
+:where(button, .nav-item, .room-card, .surface-panel, .admin-row, .admin-nav-item) {
+  transition:
+    background-color var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease),
+    color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+

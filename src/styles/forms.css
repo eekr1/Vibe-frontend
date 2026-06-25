@@ -1,0 +1,197 @@
+:where(label) {
+  color: var(--color-text-muted);
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  background: var(--color-field);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  min-height: 2.6rem;
+}
+
+:where(textarea) {
+  resize: vertical;
+}
+
+:where(input[type="checkbox"], input[type="radio"]) {
+  accent-color: var(--color-accent);
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea):focus {
+  border-color: var(--color-accent-soft);
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+
+:where(input, select, textarea):disabled {
+  color: var(--color-text-disabled);
+  opacity: 0.7;
+}
+.auth-layout {
+  display: grid;
+  min-height: 32rem;
+  place-items: center;
+}
+
+.auth-panel,
+.auth-gate,
+.room-form,
+.create-room-aside {
+  background: var(--color-surface-glass-strong);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: clamp(1.2rem, 4vw, 2rem);
+}
+
+.auth-panel h2,
+.auth-gate h2,
+.room-form h2 {
+  font-size: var(--font-size-heading);
+  line-height: 1.05;
+  margin: 0 0 1.2rem;
+}
+
+.auth-panel label,
+.room-form label,
+.private-invite-card,
+.private-entry label {
+  color: var(--color-text-muted);
+  display: grid;
+  font-weight: 700;
+  gap: 0.45rem;
+  margin: 0 0 0.95rem;
+}
+
+.field-hint {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.auth-panel input,
+.room-form input,
+.room-form select,
+.private-invite-card input,
+.private-entry input {
+  background: var(--color-field);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  min-height: 2.85rem;
+  padding: 0.7rem 0.85rem;
+  width: 100%;
+}
+
+.auth-panel input:focus,
+.room-form input:focus,
+.room-form select:focus,
+.private-invite-card input:focus,
+.private-entry input:focus {
+  border-color: var(--color-accent-soft);
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+
+.form-error {
+  background: var(--color-danger-surface);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-danger-text);
+  line-height: 1.5;
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.85rem;
+}
+
+.form-success {
+  background: var(--color-success-surface);
+  border: 1px solid var(--color-success-border-soft);
+  border-radius: var(--radius-sm);
+  color: var(--color-success-text);
+  line-height: 1.5;
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.85rem;
+}
+
+.auth-gate {
+  margin: 0 auto;
+  max-width: 460px;
+  width: min(100%, 460px);
+}
+
+.auth-panel {
+  max-width: 460px;
+  width: min(100%, 460px);
+}
+
+.create-room-layout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+}
+
+.form-intro,
+.create-room-aside p {
+  color: var(--color-text-muted);
+  line-height: 1.65;
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.visibility-switch {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: 1rem;
+  margin: 0 0 0.95rem;
+  padding: 0.85rem;
+}
+
+.visibility-switch legend {
+  color: var(--color-accent-soft);
+  font-weight: 800;
+  padding: 0 0.35rem;
+}
+
+.visibility-switch label {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.visibility-switch input {
+  accent-color: var(--color-accent);
+  min-height: auto;
+  width: auto;
+}
+
+.create-room-aside h3,
+.empty-state h3,
+.private-invite-card h3,
+.room-card h3 {
+  margin: 0;
+}
+
+.private-invite-card {
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-success-border-soft);
+  border-radius: var(--radius-md);
+  gap: 0.8rem;
+  margin: 0 0 1rem;
+  padding: 1rem;
+}
+
+.private-invite-card p {
+  color: var(--color-text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+
+

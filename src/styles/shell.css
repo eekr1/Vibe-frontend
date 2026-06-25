@@ -1,0 +1,225 @@
+.app-shell {
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem clamp(1rem, 4vw, 3rem);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-app-chrome);
+  backdrop-filter: blur(18px);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
+.brand {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--color-text);
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 800;
+  gap: 0.7rem;
+  padding: 0;
+}
+
+.brand-mark {
+  align-items: center;
+  background: var(--color-accent);
+  border-radius: var(--radius-sm);
+  color: var(--color-accent-contrast);
+  display: inline-flex;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.account-strip {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.account-chip {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  display: inline-flex;
+  padding: 0.5rem 0.65rem;
+}
+
+.nav-item {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.55rem 0.75rem;
+}
+
+.nav-item:hover,
+.nav-item.is-active {
+  border-color: var(--color-border-subtle);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.primary-action,
+.danger-action,
+.secondary-action,
+.text-action {
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  min-height: 2.6rem;
+  padding: 0.7rem 0.95rem;
+}
+
+.primary-action {
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-weight: 800;
+}
+
+.primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.danger-action {
+  background: var(--color-danger-surface-strong);
+  border: 1px solid var(--color-danger-border-strong);
+  color: var(--color-danger-text);
+  font-weight: 800;
+}
+
+.danger-action:disabled,
+.secondary-action:disabled,
+.text-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.secondary-action {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text);
+}
+
+.text-action {
+  background: transparent;
+  border: 0;
+  color: var(--color-accent-soft);
+  padding-inline: 0;
+}
+
+.compact {
+  min-height: 2.2rem;
+  padding: 0.45rem 0.65rem;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.main-surface {
+  margin: 0 auto;
+  max-width: var(--container-page);
+  padding: var(--page-gutter);
+}
+
+.runtime-band {
+  align-items: flex-end;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.runtime-band h1,
+.surface-panel h2,
+.room-side h2,
+.error-screen h1 {
+  line-height: 1.05;
+  margin: 0;
+}
+
+.runtime-band h1 {
+  font-size: var(--font-size-display);
+  max-width: 760px;
+}
+
+.trust-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  padding: 1.5rem 2rem 2.5rem;
+}
+
+.trust-footer button {
+  background: transparent;
+  border: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
+
+.trust-footer button:hover {
+  color: var(--color-text);
+}
+
+
+
+.primary-action:not(:disabled):hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  box-shadow: var(--shadow-action);
+}
+
+.secondary-action:not(:disabled):hover,
+.nav-item:not(:disabled):hover {
+  background: var(--color-surface-interactive);
+  border-color: var(--color-border-strong);
+}
+
+.danger-action:not(:disabled):hover {
+  background: var(--color-danger-surface);
+  border-color: var(--color-danger-border);
+}
+
+.text-action:not(:disabled):hover {
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 0.22rem;
+}
+
+.primary-action:not(:disabled):active,
+.secondary-action:not(:disabled):active,
+.danger-action:not(:disabled):active,
+.text-action:not(:disabled):active,
+.nav-item:not(:disabled):active {
+  transform: translateY(1px);
+}
+

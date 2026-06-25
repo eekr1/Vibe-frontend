@@ -1,0 +1,328 @@
+.admin-console {
+  align-items: start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 250px minmax(0, 1fr);
+}
+
+.admin-sidebar,
+.admin-main,
+.admin-card,
+.admin-stat-card {
+  background: var(--color-surface-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.admin-sidebar {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  position: sticky;
+  top: 6rem;
+}
+
+.admin-sidebar h2,
+.admin-toolbar h2,
+.admin-card h3 {
+  margin: 0;
+}
+
+.admin-sidebar nav {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.admin-nav-item {
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+}
+
+.admin-nav-item.is-active,
+.admin-nav-item:hover {
+  background: var(--color-danger-surface);
+  border-color: var(--color-danger-border);
+  color: var(--color-text);
+}
+
+.admin-debug-card {
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.8rem;
+}
+
+.admin-debug-card strong {
+  color: var(--color-text);
+}
+
+.admin-main {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.admin-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.admin-toolbar-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.admin-toolbar-actions small {
+  color: var(--color-text-muted);
+  max-width: 15rem;
+}
+
+.admin-section-description,
+.admin-helper-text {
+  color: var(--color-text-muted);
+  line-height: 1.55;
+  margin: 0.35rem 0 0;
+}
+
+.admin-toolbar-actions input,
+.admin-category-form input,
+.admin-edit-panel input,
+.admin-edit-panel textarea,
+.admin-detail-grid textarea,
+.admin-filter-row select,
+.admin-row select {
+  background: var(--color-field);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  min-height: 2.4rem;
+  padding: 0.55rem 0.75rem;
+}
+
+.admin-edit-panel textarea {
+  min-height: 220px;
+  resize: vertical;
+}
+
+.admin-detail-grid textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.admin-section-grid {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-list-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-card,
+.admin-stat-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.admin-stat-card span,
+.admin-row span,
+.admin-row small,
+.admin-stat-card small {
+  color: var(--color-text-muted);
+}
+
+.admin-empty-state {
+  background: var(--color-bg-glass);
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  display: grid;
+  gap: 0.25rem;
+  line-height: 1.5;
+  padding: 0.85rem;
+}
+
+.admin-empty-state strong {
+  color: var(--color-text);
+}
+
+.admin-status-pill {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  margin-left: 0.25rem;
+  padding: 0.18rem 0.45rem;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.admin-status-pill.success {
+  background: var(--color-success-surface);
+  border-color: var(--color-success-border);
+  color: var(--color-success-text);
+}
+
+.admin-status-pill.warning {
+  background: var(--color-warning-surface-strong);
+  border-color: var(--color-warning-border-strong);
+  color: var(--color-accent-soft);
+}
+
+.admin-status-pill.danger {
+  background: var(--color-danger-surface);
+  border-color: var(--color-danger-border);
+  color: var(--color-danger-text);
+}
+
+.admin-stat-card strong {
+  color: var(--color-accent-soft);
+  font-size: var(--font-size-heading);
+  line-height: 1;
+}
+
+.admin-row {
+  align-items: center;
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.8rem;
+}
+
+.admin-card > .admin-row {
+  order: 2;
+}
+
+.admin-row > div:first-child {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.admin-row p {
+  margin: 0.4rem 0 0;
+}
+
+.admin-row-tall {
+  align-items: flex-start;
+}
+
+.admin-action-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.horizontal-actions {
+  flex-direction: row;
+}
+
+.admin-filter-row {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.admin-filter-row label {
+  color: var(--color-text-muted);
+  display: grid;
+  font-weight: 800;
+  gap: 0.35rem;
+}
+
+.admin-quote {
+  color: var(--color-accent-soft);
+}
+
+.admin-detail-panel,
+.admin-edit-panel {
+  background: var(--color-bg-glass-strong);
+  border: 1px solid var(--color-danger-border-soft);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.admin-card > .admin-detail-panel {
+  order: 1;
+}
+
+.admin-detail-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.admin-detail-header h3,
+.admin-detail-header p,
+.admin-detail-grid h4,
+.admin-detail-grid p {
+  margin: 0;
+}
+
+.admin-detail-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-detail-grid > div {
+  background: var(--color-surface-glass-soft);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.8rem;
+}
+
+.admin-edit-panel {
+  grid-column: 1 / -1;
+}
+
+.admin-edit-panel label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.admin-category-form label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.checkbox-line {
+  align-items: center;
+  display: flex !important;
+  gap: 0.5rem;
+}
+
+.checkbox-line input {
+  min-height: auto;
+  width: auto;
+}
+
+
