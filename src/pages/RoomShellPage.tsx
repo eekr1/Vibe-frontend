@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useRef, useState } from "react";
+﻿import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { AuthRequiredGate } from "../components/AuthRequiredGate";
 import { ApiClientError } from "../lib/api";
@@ -148,6 +148,17 @@ function formatPlaybackTime(value: number) {
   }
 
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+function getDisplayInitials(displayName: string) {
+  const initials = displayName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+
+  return initials || "VH";
 }
 
 function describeSocketStatus(status: SocketStatus) {
@@ -884,17 +895,24 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
             {room.visibility === "private" ? "Private live room" : "Public live room"}
           </p>
           <h2>{room.title}</h2>
-          <p>
-            <strong>{room.host.displayName}</strong> is hosting this shared YouTube session.
-            {isHost
-              ? " You control playback, moderation, and when the room ends."
-              : " You are joining the host's current live moment."}
-          </p>
+          <div className="room-host-line">
+            {room.host.avatarUrl ? (
+              <img alt="" className="identity-avatar" src={room.host.avatarUrl} />
+            ) : (
+              <span className="identity-avatar" aria-hidden="true">{getDisplayInitials(room.host.displayName)}</span>
+            )}
+            <p>
+              <strong>{room.host.displayName}</strong> is hosting this shared YouTube session.
+              {isHost
+                ? " You control playback, moderation, and when the room ends."
+                : " You are joining the host's current live moment."}
+            </p>
+          </div>
           <div className="room-meta-strip">
             <span>{room.category.name}</span>
             <span>{room.activeParticipantCount}/{room.participantLimit} active</span>
             <span>{room.visibility === "private" ? "Invite link + password" : "Discoverable public room"}</span>
-            <span>{room.source.provider} video</span>
+            <span title={room.source.title ?? undefined}>{room.source.title ?? `${room.source.provider} video`}</span>
           </div>
         </div>
         <div className="room-hero-actions">
@@ -924,7 +942,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       {roomLinkFeedback ? <p className="state-banner success room-feedback-banner">{roomLinkFeedback}</p> : null}
 
       <div className="room-session-grid">
-        <main className="watch-panel">
+        <main className="watch-panel room-stage">
           {canUseRoom ? (
             <YouTubeRoomPlayer
               canUseRoom={canUseRoom}
@@ -1042,7 +1060,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
               </div>
             </form>
           ) : canUseRoom ? (
-            <div className="playback-panel">
+            <div className={isHost ? "playback-panel host-playback-panel" : "playback-panel participant-playback-panel"}>
               <div>
                 <p className="eyebrow">Shared YouTube playback</p>
                 <h3>{isHost ? "Host timeline control" : "Following the host timeline"}</h3>
@@ -1163,9 +1181,18 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
             <ul className="presence-list">
               {presenceParticipants.map((nextParticipant) => (
                 <li key={nextParticipant.id}>
-                  <div>
-                    <span>{nextParticipant.user.displayName}</span>
-                    <small>{nextParticipant.role === "host" ? "Host" : "Participant"}</small>
+                  <div className="presence-identity">
+                    {nextParticipant.user.avatarUrl ? (
+                      <img alt="" className="identity-avatar" src={nextParticipant.user.avatarUrl} />
+                    ) : (
+                      <span className="identity-avatar" aria-hidden="true">
+                        {getDisplayInitials(nextParticipant.user.displayName)}
+                      </span>
+                    )}
+                    <span>
+                      <strong>{nextParticipant.user.displayName}</strong>
+                      <small>{nextParticipant.role === "host" ? "Host" : "Participant"}</small>
+                    </span>
                   </div>
                   <div className="participant-actions">
                     <button
@@ -1302,10 +1329,19 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
             {canUseRoom && messages.length > 0 ? (
               messages.map((message) => (
                 <article className="message-item" key={message.id}>
-                  <div>
-                    <span>
-                      <strong>{message.author.displayName}</strong>
-                      <time dateTime={message.createdAt}>{formatMessageTime(message.createdAt)}</time>
+                  <div className="message-item-header">
+                    <span className="message-author-line">
+                      {message.author.avatarUrl ? (
+                        <img alt="" className="message-avatar" src={message.author.avatarUrl} />
+                      ) : (
+                        <span className="message-avatar" aria-hidden="true">
+                          {getDisplayInitials(message.author.displayName)}
+                        </span>
+                      )}
+                      <span>
+                        <strong>{message.author.displayName}</strong>
+                        <time dateTime={message.createdAt}>{formatMessageTime(message.createdAt)}</time>
+                      </span>
                     </span>
                     <button
                       className="text-action compact"
@@ -1354,3 +1390,4 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     </section>
   );
 }
+
