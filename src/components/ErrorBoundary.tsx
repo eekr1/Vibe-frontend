@@ -1,4 +1,4 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
+﻿import { Component, type ErrorInfo, type ReactNode } from "react";
 
 type ErrorBoundaryProps = {
   children: ReactNode;
@@ -27,14 +27,23 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   render() {
     if (this.state.error) {
       return (
-        <main className="error-screen">
-          <p className="eyebrow">Something broke</p>
-          <h1>Vibehall hit a client-side error.</h1>
-          <p>
-            Refresh the page once. If it happens again, keep the current route and console message
-            for debugging.
-          </p>
-          <p className="form-error">{this.state.error.message}</p>
+        <main className="error-screen product-error-screen">
+          <div className="product-error-panel">
+            <p className="eyebrow">Recovery</p>
+            <h1>Vibehall needs a fresh start for this page.</h1>
+            <p>
+              The room, account, or page view stopped rendering cleanly. Refresh once to reconnect to the app;
+              development details stay in the console for debugging.
+            </p>
+            <div className="action-row">
+              <button className="primary-action compact" onClick={() => window.location.reload()} type="button">
+                Refresh page
+              </button>
+              <button className="secondary-action compact" onClick={() => window.location.assign("/")} type="button">
+                Go home
+              </button>
+            </div>
+          </div>
         </main>
       );
     }
