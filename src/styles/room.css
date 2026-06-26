@@ -543,7 +543,8 @@
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
-.message-form input {
+.message-form input,
+.message-form textarea {
   background: var(--color-field);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-sm);
@@ -553,7 +554,8 @@
   width: 100%;
 }
 
-.message-form input:focus {
+.message-form input:focus,
+.message-form textarea:focus {
   border-color: var(--color-accent-soft);
   outline: var(--focus-outline);
   outline-offset: var(--focus-offset);
@@ -749,5 +751,33 @@
   .participant-actions {
     justify-content: flex-start;
   }
+}
+/* Wave 28 patch: chat long-content wrapping */
+.message-item,
+.message-item p,
+.message-author-line,
+.message-form,
+.message-form textarea {
+  min-width: 0;
+}
+
+.message-item p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.message-form textarea {
+  font: inherit;
+  line-height: 1.45;
+  max-height: 8rem;
+  min-height: 2.8rem;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  resize: vertical;
+  white-space: pre-wrap;
+}
+
+.message-form textarea:disabled {
+  color: var(--color-text-disabled);
 }
 

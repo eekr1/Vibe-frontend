@@ -1374,11 +1374,12 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
           </div>
 
           <form className="message-form" onSubmit={handleSendMessage}>
-            <input
+            <textarea
               disabled={!canUseRoom || isSendingMessage}
               maxLength={500}
               onChange={(event) => setMessageBody(event.target.value)}
               placeholder={canUseRoom ? "React to the room..." : "Chat opens after you enter"}
+              rows={2}
               value={messageBody}
             />
             <button className="primary-action compact" disabled={!canUseRoom || isSendingMessage || !messageBody.trim()} type="submit">
@@ -1390,4 +1391,5 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     </section>
   );
 }
+
 
