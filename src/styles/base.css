@@ -3,14 +3,18 @@
 }
 
 html {
+  max-width: 100%;
   min-width: 320px;
+  overflow-x: clip;
   background: var(--color-bg);
 }
 
 body {
   margin: 0;
+  max-width: 100%;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: clip;
   background:
     radial-gradient(circle at top left, var(--ambient-ember), transparent 34rem),
     linear-gradient(135deg, var(--color-bg) 0%, var(--color-surface) 55%, var(--color-bg-soft) 100%);
@@ -31,7 +35,12 @@ button {
 }
 
 img {
+  height: auto;
   max-width: 100%;
+}
+
+:where(h1, h2, h3, p, li, dd) {
+  overflow-wrap: anywhere;
 }
 
 a {
@@ -67,4 +76,3 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
-

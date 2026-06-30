@@ -1,4 +1,4 @@
-﻿import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { AuthRequiredGate } from "../components/AuthRequiredGate";
 import { ApiClientError } from "../lib/api";
@@ -844,8 +844,8 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
   if (isCheckingSession || isLoadingRoom || isJoining) {
     return (
       <section className="surface-panel wide-panel">
-        <div className="inline-loading">
-          <span className="loader" />
+        <div aria-live="polite" className="inline-loading" role="status">
+          <span aria-hidden="true" className="loader" />
           Entering room session and checking access
         </div>
       </section>
@@ -875,7 +875,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       <section className="surface-panel wide-panel">
         <p className="eyebrow">Room unavailable</p>
         <h2>This room cannot be opened.</h2>
-        <p className="form-error">{error}</p>
+        <p className="form-error" role="alert">{error}</p>
         <button className="secondary-action" onClick={() => onNavigate("/discover")} type="button">
           Back to Discover
         </button>
@@ -897,7 +897,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
           <h2>{room.title}</h2>
           <div className="room-host-line">
             {room.host.avatarUrl ? (
-              <img alt="" className="identity-avatar" src={room.host.avatarUrl} />
+              <img alt="" className="identity-avatar" height="36" src={room.host.avatarUrl} width="36" />
             ) : (
               <span className="identity-avatar" aria-hidden="true">{getDisplayInitials(room.host.displayName)}</span>
             )}
@@ -939,7 +939,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
         </div>
       </header>
 
-      {roomLinkFeedback ? <p className="state-banner success room-feedback-banner">{roomLinkFeedback}</p> : null}
+      {roomLinkFeedback ? <p aria-live="polite" className="state-banner success room-feedback-banner" role="status">{roomLinkFeedback}</p> : null}
 
       <div className="room-session-grid">
         <main className="watch-panel room-stage">
@@ -957,7 +957,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
             />
           ) : (
             <div className="video-plane">
-              {room.source.thumbnailUrl ? <img alt="" src={room.source.thumbnailUrl} /> : null}
+              {room.source.thumbnailUrl ? <img alt="" height="720" src={room.source.thumbnailUrl} width="1280" /> : null}
               <div className="video-plane-overlay">
                 <span>{isEnded ? "Room ended" : "Entry required"}</span>
               </div>
@@ -1049,7 +1049,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                   value={privatePassword}
                 />
               </label>
-              {error ? <p className="form-error">{error}</p> : null}
+              {error ? <p className="form-error" role="alert">{error}</p> : null}
               <div className="action-row">
                 <button className="primary-action compact" disabled={isUnlocking} type="submit">
                   {isUnlocking ? "Checking..." : "Enter private room"}
@@ -1068,7 +1068,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                   {playback.status === "playing" ? "Playing" : "Paused"} at {formatPlaybackTime(playbackPosition)} / {playbackDuration > 0 ? formatPlaybackTime(playbackDuration) : "--:--"}.
                   {" "}Last host sync {formatMessageTime(playback.updatedAt)}.
                 </p>
-                {playerError ? <p className="form-error">{playerError}</p> : null}
+                {playerError ? <p className="form-error" role="alert">{playerError}</p> : null}
               </div>
               {isHost ? (
                 <div className="playback-controls">
@@ -1183,7 +1183,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                 <li key={nextParticipant.id}>
                   <div className="presence-identity">
                     {nextParticipant.user.avatarUrl ? (
-                      <img alt="" className="identity-avatar" src={nextParticipant.user.avatarUrl} />
+                      <img alt="" className="identity-avatar" height="36" src={nextParticipant.user.avatarUrl} width="36" />
                     ) : (
                       <span className="identity-avatar" aria-hidden="true">
                         {getDisplayInitials(nextParticipant.user.displayName)}
@@ -1310,10 +1310,10 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
               </p>
             )}
           </div>
-          {moderationFeedback ? <p className="state-banner success">{moderationFeedback}</p> : null}
-          {reportFeedback ? <p className="state-banner success">{reportFeedback}</p> : null}
-          {error && accessState !== "password_required" ? <p className="form-error">{error}</p> : null}
-          {realtimeError ? <p className="form-error">{realtimeError}</p> : null}
+          {moderationFeedback ? <p aria-live="polite" className="state-banner success" role="status">{moderationFeedback}</p> : null}
+          {reportFeedback ? <p aria-live="polite" className="state-banner success" role="status">{reportFeedback}</p> : null}
+          {error && accessState !== "password_required" ? <p className="form-error" role="alert">{error}</p> : null}
+          {realtimeError ? <p className="form-error" role="alert">{realtimeError}</p> : null}
         </aside>
 
         <section className={canUseRoom ? "chat-panel" : "chat-panel is-disabled"}>
@@ -1332,7 +1332,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                   <div className="message-item-header">
                     <span className="message-author-line">
                       {message.author.avatarUrl ? (
-                        <img alt="" className="message-avatar" src={message.author.avatarUrl} />
+                        <img alt="" className="message-avatar" height="32" src={message.author.avatarUrl} width="32" />
                       ) : (
                         <span className="message-avatar" aria-hidden="true">
                           {getDisplayInitials(message.author.displayName)}
@@ -1391,5 +1391,3 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     </section>
   );
 }
-
-

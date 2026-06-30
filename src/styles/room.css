@@ -1,4 +1,4 @@
-﻿.room-frame {
+.room-frame {
   display: grid;
   gap: 1rem;
   grid-template-columns: minmax(0, 1fr) minmax(260px, 330px);
@@ -106,7 +106,7 @@
   color: var(--color-text-muted);
   display: flex;
   justify-content: center;
-  min-height: 22rem;
+  min-height: 0;
   overflow: hidden;
   position: relative;
 }
@@ -138,7 +138,7 @@
     var(--color-bg-deep);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
-  min-height: 22rem;
+  min-height: 0;
   overflow: hidden;
   position: relative;
 }
@@ -742,10 +742,6 @@
     max-width: 100%;
   }
 
-  .youtube-room-player,
-  .video-plane {
-    min-height: 15rem;
-  }
 
   .room-hero-actions,
   .participant-actions {
@@ -780,4 +776,3 @@
 .message-form textarea:disabled {
   color: var(--color-text-disabled);
 }
-

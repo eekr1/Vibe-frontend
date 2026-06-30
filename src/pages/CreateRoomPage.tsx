@@ -294,7 +294,7 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
           ) : null}
         </section>
 
-        {error ? <p className="form-error">{error}</p> : null}
+        {error ? <p className="form-error" role="alert">{error}</p> : null}
 
         {createdPrivateRoom ? (
           <div className="private-invite-card">
@@ -305,7 +305,7 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
               and guests still need the password you set.
             </p>
             <input aria-label="Private room invite link" readOnly value={createdPrivateRoomUrl} />
-            {inviteCopyStatus ? <p className="state-banner success">{inviteCopyStatus}</p> : null}
+            {inviteCopyStatus ? <p aria-live="polite" className="state-banner success" role="status">{inviteCopyStatus}</p> : null}
             <div className="action-row">
               <button className="secondary-action compact" onClick={() => void handleCopyInviteLink()} type="button">
                 Copy invite link

@@ -64,7 +64,7 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
                 <>
                   <button className="account-button" onClick={() => onNavigate("/profile")} type="button">
                     {currentUser.avatarUrl ? (
-                      <img alt="" className="account-avatar" src={currentUser.avatarUrl} />
+                      <img alt="" className="account-avatar" height="28" src={currentUser.avatarUrl} width="28" />
                     ) : (
                       <span className="account-avatar" aria-hidden="true">{getInitials(currentUser.displayName)}</span>
                     )}

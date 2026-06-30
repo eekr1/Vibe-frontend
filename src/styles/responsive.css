@@ -1,8 +1,43 @@
+@media (max-width: 1040px) {
+  :root {
+    --font-size-display: 3.25rem;
+  }
+
+  .topbar-inner {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .nav {
+    justify-self: end;
+  }
+
+  .shell-actions {
+    border-top: 1px solid var(--color-border-subtle);
+    grid-column: 1 / -1;
+    padding-top: var(--space-3);
+  }
+}
+
+@media (max-width: 960px) {
+  .create-room-layout,
+  .room-session-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .launch-summary {
+    width: 100%;
+  }
+}
+
 @media (max-width: 760px) {
   :root {
     --font-size-display: 2.5rem;
     --font-size-heading: 1.8rem;
     --font-size-title: 1.35rem;
+  }
+
+  .topbar {
+    position: static;
   }
 
   .topbar-inner,
@@ -62,6 +97,34 @@
     max-width: 100%;
   }
 
+  .main-surface,
+  .page-masthead,
+  .surface-panel,
+  .room-form,
+  .auth-panel,
+  .auth-gate,
+  .create-room-aside,
+  .watch-panel,
+  .chat-panel,
+  .room-side {
+    min-width: 0;
+  }
+
+  .primary-action,
+  .secondary-action,
+  .danger-action,
+  .text-action,
+  .nav-item {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .auth-mode-switch {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
   .discover-load-more,
   .shell-create-action {
     width: fit-content;
@@ -84,5 +147,18 @@
 
   .participant-actions {
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .action-row > button,
+  .discover-hero-actions > button,
+  .launch-action-row > button {
+    flex: 1 1 10rem;
+    width: 100%;
+  }
+
+  .room-card-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

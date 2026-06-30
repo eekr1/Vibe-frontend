@@ -100,8 +100,8 @@ export function ProfileSettingsPage({ onNavigate }: ProfileSettingsPageProps) {
   if (isCheckingSession || isLoadingProfile) {
     return (
       <section className="surface-panel wide-panel">
-        <div className="inline-loading">
-          <span className="loader" />
+        <div aria-live="polite" className="inline-loading" role="status">
+          <span aria-hidden="true" className="loader" />
           Loading profile settings
         </div>
       </section>
@@ -118,7 +118,7 @@ export function ProfileSettingsPage({ onNavigate }: ProfileSettingsPageProps) {
         <p className="eyebrow">Room identity</p>
         <div className="profile-hero-card">
           {avatarUrl.trim() ? (
-            <img alt="" src={avatarUrl.trim()} />
+            <img alt="" height="72" src={avatarUrl.trim()} width="72" />
           ) : (
             <span className="profile-avatar-fallback">{avatarInitial}</span>
           )}
@@ -183,8 +183,8 @@ export function ProfileSettingsPage({ onNavigate }: ProfileSettingsPageProps) {
             value={avatarUrl}
           />
         </label>
-        {error ? <p className="form-error">{error}</p> : null}
-        {success ? <p className="state-banner success">{success}</p> : null}
+        {error ? <p className="form-error" role="alert">{error}</p> : null}
+        {success ? <p aria-live="polite" className="state-banner success" role="status">{success}</p> : null}
         {!avatarUrl.trim() ? (
           <p className="state-banner">Avatar URL is optional. Leaving it blank keeps your profile text-only.</p>
         ) : null}

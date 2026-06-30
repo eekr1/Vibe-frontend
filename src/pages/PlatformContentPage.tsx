@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getPublicPlatformContent,
   type PlatformContentPageKey,
@@ -215,14 +215,14 @@ export function PlatformContentPage({ eyebrow, pageKey }: PlatformContentPagePro
       </header>
 
       {isLoading ? (
-        <div className="inline-loading">
-          <span className="loader" />
+        <div aria-live="polite" className="inline-loading" role="status">
+          <span aria-hidden="true" className="loader" />
           Loading published platform content
         </div>
       ) : null}
 
       {error ? (
-        <div className="state-banner trust-content-alert">
+        <div className="state-banner trust-content-alert" role="alert">
           <p>{error}</p>
           <button className="secondary-action compact" onClick={() => setLoadToken((token) => token + 1)} type="button">
             Retry content
@@ -256,4 +256,3 @@ export function CommunityGuidelinesPage() {
 export function SupportPage() {
   return <PlatformContentPage eyebrow="Support" pageKey="support" />;
 }
-

@@ -249,7 +249,7 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
           ))}
         </div>
       ) : error ? (
-        <div className="empty-state danger discover-state-panel">
+        <div className="empty-state danger discover-state-panel" role="alert">
           <h3>Discover could not refresh.</h3>
           <p className="form-error">{error}</p>
           <button className="secondary-action" onClick={() => window.location.reload()} type="button">
@@ -268,7 +268,7 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
               >
                 <span className="room-card-media">
                   {room.source.thumbnailUrl ? (
-                    <img alt={room.card?.thumbnailAlt ?? ""} src={room.source.thumbnailUrl} />
+                    <img alt={room.card?.thumbnailAlt ?? ""} height="360" src={room.source.thumbnailUrl} width="640" />
                   ) : (
                     <span className="room-card-placeholder">YouTube</span>
                   )}
@@ -282,7 +282,7 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
                   <span className="room-card-title">{room.title}</span>
                   <span className="room-card-host">
                     {room.host.avatarUrl ? (
-                      <img alt="" src={room.host.avatarUrl} />
+                      <img alt="" height="30" src={room.host.avatarUrl} width="30" />
                     ) : (
                       <span className="room-host-avatar" aria-hidden="true">{getInitials(room.host.displayName)}</span>
                     )}

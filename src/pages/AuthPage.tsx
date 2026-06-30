@@ -293,7 +293,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
         ) : null}
 
         {resetTokenMissing ? (
-          <div className="form-error">
+          <div className="form-error" role="alert">
             This reset link is missing its token. Please request a new password reset link.
             <div className="action-row">
               <button className="text-action compact" onClick={() => switchMode("forgot")} type="button">
@@ -331,8 +331,8 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
           </label>
         ) : null}
 
-        {successMessage ? <p className="form-success">{successMessage}</p> : null}
-        {error ? <p className="form-error">{error}</p> : null}
+        {successMessage ? <p aria-live="polite" className="form-success" role="status">{successMessage}</p> : null}
+        {error ? <p className="form-error" role="alert">{error}</p> : null}
 
         <button className="primary-action full-width" disabled={isSubmitting || resetTokenMissing} type="submit">
           {isSubmitting
