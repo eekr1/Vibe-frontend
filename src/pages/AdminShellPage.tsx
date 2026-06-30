@@ -172,6 +172,18 @@ function AdminStatusPill({
   return <span className={`admin-status-pill ${tone}`}>{children}</span>;
 }
 
+function getReportStatusTone(status: AdminReportStatus): "danger" | "neutral" | "success" | "warning" {
+  if (status === "action_taken") {
+    return "success";
+  }
+
+  if (status === "open" || status === "escalated") {
+    return "warning";
+  }
+
+  return "neutral";
+}
+
 export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
   const { currentUser, isCheckingSession } = useAuth();
   const [activeSection, setActiveSection] = useState<AdminSection>("overview");
@@ -812,6 +824,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
         <nav aria-label="Admin sections">
           {sections.map((section) => (
             <button
+              aria-current={activeSection === section.id ? "page" : undefined}
               className={activeSection === section.id ? "admin-nav-item is-active" : "admin-nav-item"}
               key={section.id}
               onClick={() => setActiveSection(section.id)}
@@ -854,10 +867,10 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
           </div>
         </header>
 
-        {error ? <p className="form-error">{error}</p> : null}
-        {success ? <p className="state-banner success">{success}</p> : null}
+        {error ? <p className="form-error" role="alert">{error}</p> : null}
+        {success ? <p className="state-banner success" role="status">{success}</p> : null}
         {search ? (
-          <p className="state-banner">
+          <p className="state-banner" role="status">
             Searching loaded admin data for "{search}". Overview results: {visibleOverviewReports.length} reports,{" "}
             {visibleOverviewRooms.length} rooms. Section results: {visibleUsers.length} users, {visibleRooms.length} rooms,{" "}
             {visibleReports.length} reports, {visibleModerationActions.length} room actions,{" "}
@@ -1211,7 +1224,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                   <strong>{report.reason}</strong>
                   <span>
                     {report.targetType}{" "}
-                    <AdminStatusPill tone={report.status === "open" ? "warning" : report.status === "action_taken" ? "success" : "neutral"}>
+                    <AdminStatusPill tone={getReportStatusTone(report.status)}>
                       {reportStatusLabels[report.status]}
                     </AdminStatusPill>{" "}
                     reporter {report.reporter.displayName}
@@ -1234,7 +1247,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                   </button>
                   {reportReviewStatuses.map((status) => (
                     <button
-                      className="secondary-action compact"
+                      className={`secondary-action compact admin-review-action admin-review-action-${status}`}
                       disabled={report.status === status || isMutating === `report:${report.id}:${status}`}
                       key={status}
                       onClick={() => void handleReportReview(report.id, status)}
@@ -1256,7 +1269,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                       {selectedReportDetail.report.targetType} | {selectedReportDetail.report.status} | reporter{" "}
                       {selectedReportDetail.report.reporter.displayName}
                     </p>
-                    <AdminStatusPill tone={selectedReportDetail.report.status === "open" ? "warning" : selectedReportDetail.report.status === "action_taken" ? "success" : "neutral"}>
+                    <AdminStatusPill tone={getReportStatusTone(selectedReportDetail.report.status)}>
                       {reportStatusLabels[selectedReportDetail.report.status]}
                     </AdminStatusPill>
                   </div>
@@ -1315,7 +1328,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                         getReportActions(selectedReportDetail.report).map((action) => (
                           <button
                             className={
-                              action === "restore_user" || action === "end_room" || action === "hide_message"
+                              action === "restore_user"
                                 ? "secondary-action compact"
                                 : "danger-action compact"
                             }
