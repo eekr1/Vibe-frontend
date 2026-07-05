@@ -12,6 +12,8 @@ import {
   TermsPage
 } from "../pages/PlatformContentPage";
 import { ProfileSettingsPage } from "../pages/ProfileSettingsPage";
+import { MemberProfilePage } from "../pages/MemberProfilePage";
+import { OwnerProfilePage } from "../pages/OwnerProfilePage";
 import { RoomShellPage } from "../pages/RoomShellPage";
 
 export type RouteDefinition = {
@@ -19,6 +21,7 @@ export type RouteDefinition = {
   label: string;
   path: string;
   showInPrimaryNav?: boolean;
+  match?: (path: string) => boolean;
   title: string;
 };
 
@@ -64,10 +67,23 @@ export const routes: RouteDefinition[] = [
     title: "Reset your password"
   },
   {
-    component: ProfileSettingsPage,
+    component: OwnerProfilePage,
     label: "Profile",
     path: "/profile",
-    title: "Profile and settings"
+    title: "Your member profile"
+  },
+  {
+    component: ProfileSettingsPage,
+    label: "Settings",
+    path: "/settings",
+    title: "Profile, privacy, and account settings"
+  },
+  {
+    component: MemberProfilePage,
+    label: "Member profile",
+    match: (path) => /^\/users\/[^/]+$/.test(path),
+    path: "/users/:username",
+    title: "Member profile"
   },
   {
     component: AdminShellPage,

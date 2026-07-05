@@ -84,3 +84,31 @@ export async function apiRequest<TData>(
 
   return payload.data;
 }
+
+export async function apiUploadRequest<TData>(
+  path: string,
+  body: FormData,
+  onProgress?: (percent: number) => void
+): Promise<TData> {
+  const token = await getCsrfToken();
+  return new Promise<TData>((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("POST", `${API_BASE_URL}${path}`);
+    request.withCredentials = true;
+    request.setRequestHeader("Accept", "application/json");
+    if (token) request.setRequestHeader("X-CSRF-Token", token);
+    request.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) onProgress?.(Math.min(100, Math.round((event.loaded / event.total) * 100)));
+    });
+    request.addEventListener("error", () => reject(new ApiClientError("Avatar upload failed.", "NETWORK_ERROR")));
+    request.addEventListener("load", () => {
+      let payload: ApiResponse<TData>;
+      try { payload = JSON.parse(request.responseText) as ApiResponse<TData>; }
+      catch { reject(new ApiClientError("The server returned an unreadable response.", "HTTP_RESPONSE_INVALID")); return; }
+      if (!payload.ok) { reject(new ApiClientError(payload.error.message, payload.error.code, payload.error.details)); return; }
+      onProgress?.(100);
+      resolve(payload.data);
+    });
+    request.send(body);
+  });
+}

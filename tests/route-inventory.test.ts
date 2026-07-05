@@ -8,4 +8,11 @@ describe("Wave 32 route inventory", () => {
     expect(paths).not.toContain("/messages");
     expect(paths).not.toContain("/notifications");
   });
+
+  it("reserves the Wave 34 profile/settings routes without exposing later social routes", () => {
+    expect(routes.some((route) => route.path === "/profile")).toBe(true);
+    expect(routes.some((route) => route.path === "/settings")).toBe(true);
+    expect(routes.find((route) => route.path === "/users/:username")?.match?.("/users/Ada_01")).toBe(true);
+    expect(routes.find((route) => route.path === "/users/:username")?.match?.("/users/ada/extra")).toBe(false);
+  });
 });

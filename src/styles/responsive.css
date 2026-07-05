@@ -24,6 +24,10 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .settings-grid-section {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .launch-summary {
     width: 100%;
   }
@@ -73,6 +77,22 @@
     flex-direction: column;
   }
 
+  .avatar-crop-layout,
+  .privacy-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .member-profile-main,
+  .settings-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .settings-section-nav {
+    position: static;
+  }
+
   .brand,
   .discover-hero-actions,
   .nav,
@@ -108,6 +128,11 @@
   .chat-panel,
   .room-side {
     min-width: 0;
+  }
+
+  .managed-profile-avatar.is-large {
+    height: 5.5rem;
+    width: 5.5rem;
   }
 
   .primary-action,

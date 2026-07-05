@@ -446,6 +446,285 @@
 .profile-account-facts {
   margin-top: 0;
 }
+
+/* Wave 34 profile, privacy, avatar, and account experience */
+.member-profile-page,
+.settings-page {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.member-profile-page {
+  margin: 0 auto;
+  max-width: 820px;
+  width: 100%;
+}
+
+.member-profile-card {
+  display: grid;
+  gap: var(--space-4);
+  overflow: hidden;
+}
+
+.member-profile-main {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.member-profile-copy {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.member-profile-copy h2,
+.profile-unavailable h2,
+.settings-section-heading h2,
+.settings-section-heading h3,
+.account-deletion-complete h2,
+.deletion-dialog h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.member-handle,
+.member-since,
+.member-bio,
+.profile-presence-note {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.member-handle {
+  color: var(--color-accent-soft);
+  font-family: var(--font-family-mono);
+  font-weight: 800;
+}
+
+.member-bio {
+  color: var(--color-text);
+  line-height: var(--line-height-copy);
+  white-space: pre-wrap;
+}
+
+.member-bio.is-empty,
+.member-since,
+.profile-presence-note {
+  color: var(--color-text-muted);
+}
+
+.profile-presence-note {
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+
+.managed-profile-avatar {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  flex: 0 0 auto;
+  object-fit: cover;
+}
+
+.managed-profile-avatar.is-large {
+  height: 7rem;
+  width: 7rem;
+}
+
+.managed-profile-avatar.is-small {
+  height: 3rem;
+  width: 3rem;
+}
+
+.managed-profile-avatar.is-initials {
+  align-items: center;
+  background: var(--color-danger-surface-avatar);
+  color: var(--color-accent-soft);
+  display: inline-flex;
+  font-size: var(--font-size-title);
+  font-weight: 900;
+  justify-content: center;
+}
+
+.profile-unavailable,
+.account-deletion-complete {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0 auto;
+  max-width: 680px;
+}
+
+.settings-section-nav {
+  align-items: center;
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  position: sticky;
+  top: 5.8rem;
+  width: fit-content;
+  z-index: var(--z-sticky);
+}
+
+.settings-section-nav a {
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-weight: 800;
+  padding: var(--space-2) var(--space-3);
+  text-decoration: none;
+}
+
+.settings-section-nav a:hover,
+.settings-section-nav a:focus-visible {
+  background: var(--color-surface-interactive);
+  color: var(--color-text);
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
+}
+
+.settings-grid-section {
+  align-items: start;
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(260px, 0.82fr) minmax(0, 1.18fr);
+  scroll-margin-top: 8rem;
+}
+
+.settings-form,
+.account-settings,
+.avatar-manager {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.settings-form,
+.account-settings {
+  scroll-margin-top: 8rem;
+}
+
+.settings-section-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.settings-form label,
+.avatar-manager label,
+.deletion-dialog label {
+  color: var(--color-text-muted);
+  display: grid;
+  font-weight: 750;
+  gap: var(--space-2);
+}
+
+.settings-form input,
+.settings-form select,
+.settings-form textarea,
+.avatar-manager input[type="file"],
+.deletion-dialog input {
+  padding: 0.7rem 0.85rem;
+  width: 100%;
+}
+
+.character-count {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-metadata);
+  justify-self: end;
+}
+
+.avatar-manager {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: var(--space-5);
+}
+
+.file-picker {
+  background: var(--color-bg-glass);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  padding: var(--space-3);
+}
+
+.avatar-crop-layout {
+  align-items: start;
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+}
+
+.avatar-crop-preview {
+  aspect-ratio: 1;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  max-width: 100%;
+  width: 240px;
+}
+
+.avatar-crop-controls {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.avatar-crop-controls input[type="range"] {
+  accent-color: var(--color-accent);
+  width: 100%;
+}
+
+.avatar-manager progress {
+  accent-color: var(--color-accent);
+  width: 100%;
+}
+
+.avatar-remove-action {
+  justify-self: start;
+}
+
+.privacy-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.account-settings {
+  border-color: var(--color-danger-border);
+}
+
+.account-settings > p,
+.deletion-dialog li {
+  color: var(--color-text-muted);
+  line-height: var(--line-height-copy);
+}
+
+.deletion-overlay {
+  align-items: center;
+  display: grid;
+  justify-items: center;
+}
+
+.deletion-dialog {
+  padding: clamp(1rem, 4vw, 1.5rem);
+}
+
+.deletion-dialog form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.deletion-dialog ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-left: 1.2rem;
+}
 /* Wave 29 trust and recovery surfaces */
 .trust-content-page {
   display: grid;
