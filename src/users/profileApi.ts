@@ -33,12 +33,15 @@ export type MyProfileData = {
   user: CurrentUser;
 };
 
+export type RelationshipAction = "accept" | "block" | "cancel" | "decline" | "report" | "send" | "unblock" | "unfriend";
+export type RelationshipState = { actions: RelationshipAction[]; state: "blocked" | "friends" | "incoming_pending" | "none" | "outgoing_pending" | "unavailable" };
+
 export function getMyProfile() {
   return apiRequest<MyProfileData>("/users/me/profile");
 }
 
 export function getMemberProfile(username: string) {
-  return apiRequest<{ profile: MemberProfile }>(`/users/${encodeURIComponent(username)}/profile`);
+  return apiRequest<{ profile: MemberProfile; relationship?: RelationshipState }>(`/users/${encodeURIComponent(username)}/profile`);
 }
 
 export function updateMyProfile(input: { bio?: string | null; displayName?: string }) {
