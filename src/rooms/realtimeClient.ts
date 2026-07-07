@@ -1,5 +1,6 @@
-import { io, type Socket } from "socket.io-client";
+﻿import { io, type Socket } from "socket.io-client";
 import type { CurrentUser } from "../auth/AuthContext";
+import type { NotificationSummary, FriendPresence } from "../social/socialApi";
 import type { ModerationAction, ModerationActionType, Room, RoomMessage, RoomParticipant } from "./roomApi";
 
 export type PlaybackState = {
@@ -61,9 +62,12 @@ type ServerToClientEvents = {
       targetUserId: string;
     }>
   ) => void;
+  "notification.invalidated": (payload: RealtimeEnvelope<{ reason: "block" | "friendship" | "notification" | "request" | "unblock"; summary: NotificationSummary }>) => void;
   "playback.state.updated": (
     payload: RealtimeEnvelope<{ playback: PlaybackState; roomId: string; updatedByUserId: string }>
   ) => void;
+  "presence.friend.updated": (payload: RealtimeEnvelope<{ presence: FriendPresence; reason: "offline" | "online" | "reconciled" }>) => void;
+  "presence.friends.snapshot": (payload: RealtimeEnvelope<{ degraded: boolean; items: FriendPresence[] }>) => void;
   "room.access.revoked": (
     payload: RealtimeEnvelope<{
       actionType: ModerationActionType;
