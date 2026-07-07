@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { ApiClientError } from "../lib/api";
-import { getMemberProfile, type MemberProfile } from "../users/profileApi";
+import { getMemberProfile, type MemberProfile, type RelationshipState } from "../users/profileApi";
 import { ProfileIdentityCard } from "../users/ProfileIdentityCard";
+import { RelationshipActions } from "../social/RelationshipActions";
 
 export function MemberProfilePage({ onNavigate }: { onNavigate: (path: string) => void }) {
   const { currentUser } = useAuth();
@@ -11,6 +12,7 @@ export function MemberProfilePage({ onNavigate }: { onNavigate: (path: string) =
     catch { return ""; }
   }, [window.location.pathname]);
   const [profile, setProfile] = useState<MemberProfile | null>(null);
+  const [relationship, setRelationship] = useState<RelationshipState | null>(null);
   const [loading, setLoading] = useState(true);
   const [unavailable, setUnavailable] = useState(false);
 
@@ -19,7 +21,7 @@ export function MemberProfilePage({ onNavigate }: { onNavigate: (path: string) =
     setLoading(true);
     setUnavailable(false);
     void getMemberProfile(username)
-      .then((data) => { if (active) setProfile(data.profile); })
+      .then((data) => { if (active) { setProfile(data.profile); setRelationship(data.relationship ?? null); } })
       .catch((error) => { if (active) setUnavailable(error instanceof ApiClientError && ["NOT_FOUND", "FEATURE_DISABLED", "FORBIDDEN"].includes(error.code)); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -41,7 +43,7 @@ export function MemberProfilePage({ onNavigate }: { onNavigate: (path: string) =
   return (
     <section className="member-profile-page">
       <ProfileIdentityCard
-        actions={isSelf ? <><button className="primary-action" onClick={() => onNavigate("/settings")} type="button">Manage settings</button><button className="secondary-action" onClick={() => onNavigate("/profile")} type="button">View my profile</button></> : profile.viewer === "guest" ? <><button className="primary-action" onClick={() => onNavigate(`/auth?mode=login&returnTo=${encodeURIComponent(window.location.pathname)}`)} type="button">Log in</button><button className="text-action" onClick={() => onNavigate(`/auth?mode=signup&returnTo=${encodeURIComponent(window.location.pathname)}`)} type="button">Create account</button></> : null}
+        actions={isSelf ? <><button className="primary-action" onClick={() => onNavigate("/settings")} type="button">Manage settings</button><button className="secondary-action" onClick={() => onNavigate("/profile")} type="button">View my profile</button></> : profile.viewer === "guest" ? <><button className="primary-action" onClick={() => onNavigate(`/auth?mode=login&returnTo=${encodeURIComponent(window.location.pathname)}`)} type="button">Log in</button><button className="text-action" onClick={() => onNavigate(`/auth?mode=signup&returnTo=${encodeURIComponent(window.location.pathname)}`)} type="button">Create account</button></> : currentUser && relationship ? <RelationshipActions initialRelationship={relationship} onChanged={setRelationship} targetLabel={profile.displayName} targetUserId={profile.id} /> : null}
         profile={profile}
         showPresencePlaceholder={profile.viewer !== "guest"}
       />

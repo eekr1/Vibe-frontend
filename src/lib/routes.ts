@@ -15,6 +15,7 @@ import { ProfileSettingsPage } from "../pages/ProfileSettingsPage";
 import { MemberProfilePage } from "../pages/MemberProfilePage";
 import { OwnerProfilePage } from "../pages/OwnerProfilePage";
 import { RoomShellPage } from "../pages/RoomShellPage";
+import { FriendsPage } from "../pages/FriendsPage";
 
 export type RouteDefinition = {
   component: ComponentType<{ onNavigate: (path: string) => void }>;
@@ -51,6 +52,12 @@ export const routes: RouteDefinition[] = [
     label: "Room",
     path: "/room",
     title: "Live room"
+  },
+  {
+    component: FriendsPage,
+    label: "Friends",
+    path: "/friends",
+    title: "Friends and requests"
   },
   {
     component: AuthPage,

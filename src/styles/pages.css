@@ -725,6 +725,183 @@
   margin: 0;
   padding-left: 1.2rem;
 }
+
+/* Wave 36 friends, requests, reconnection, and block experience */
+.friends-page {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.friends-summary {
+  align-items: end;
+  display: grid;
+  gap: var(--space-5);
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.friends-summary h2,
+.friends-list-heading h2 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.friends-summary p:not(.eyebrow),
+.blocked-settings > p {
+  color: var(--color-text-muted);
+  line-height: var(--line-height-copy);
+}
+
+.friends-counts {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.friends-counts span {
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  padding: var(--space-2) var(--space-3);
+  white-space: nowrap;
+}
+
+.friends-counts strong {
+  color: var(--color-text);
+}
+
+.friends-tabs {
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+}
+
+.friends-tabs button {
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  flex: 0 0 auto;
+  font-weight: 800;
+  padding: var(--space-2) var(--space-3);
+}
+
+.friends-tabs button.is-active {
+  background: var(--color-surface-interactive);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.friends-list-panel,
+.blocked-settings {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.blocked-settings {
+  scroll-margin-top: 8rem;
+}
+
+.friends-list-heading {
+  align-items: start;
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+
+.friend-filter {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 34rem;
+}
+
+.friend-filter input {
+  width: 100%;
+}
+
+.social-identity-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.social-identity-card {
+  align-items: center;
+  background: var(--color-bg-glass);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  min-width: 0;
+  padding: var(--space-3);
+}
+
+.social-identity-link {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  display: flex;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.social-identity-link:hover strong,
+.social-identity-link:focus-visible strong {
+  color: var(--color-accent);
+}
+
+.social-identity-copy {
+  display: grid;
+  min-width: 0;
+}
+
+.social-identity-copy strong,
+.social-identity-copy small,
+.social-identity-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.social-identity-copy small,
+.social-identity-copy span,
+.relationship-feedback,
+.relationship-status {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-metadata);
+}
+
+.relationship-control {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.relationship-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.relationship-feedback {
+  line-height: var(--line-height-copy);
+  margin: 0;
+  max-width: 30rem;
+}
+
+.participant-actions .relationship-control {
+  width: 100%;
+}
+
+.participant-actions .relationship-actions {
+  justify-content: flex-end;
+}
 /* Wave 29 trust and recovery surfaces */
 .trust-content-page {
   display: grid;

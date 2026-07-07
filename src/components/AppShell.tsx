@@ -62,6 +62,9 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
                 <span className="account-chip is-loading">Checking account</span>
               ) : currentUser ? (
                 <>
+                  <button className="text-action compact shell-friends-action" onClick={() => onNavigate("/friends")} type="button">
+                    Friends
+                  </button>
                   <button className="account-button" onClick={() => onNavigate("/profile")} type="button">
                     {currentUser.avatarUrl ? (
                       <img alt="" className="account-avatar" height="28" src={currentUser.avatarUrl} width="28" />

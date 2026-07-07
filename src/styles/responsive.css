@@ -34,6 +34,25 @@
 }
 
 @media (max-width: 760px) {
+  .friends-summary,
+  .social-identity-card {
+    grid-template-columns: 1fr;
+  }
+
+  .friends-counts,
+  .friends-list-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .relationship-actions {
+    justify-content: flex-start;
+  }
+
+  .shell-friends-action {
+    display: none;
+  }
+
   :root {
     --font-size-display: 2.5rem;
     --font-size-heading: 1.8rem;

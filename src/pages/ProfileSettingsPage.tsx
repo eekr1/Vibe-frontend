@@ -6,6 +6,7 @@ import { AvatarCropper } from "../users/AvatarCropper";
 import { getMyProfile, requestAccountDeletion, updateMyProfile, updateSocialSettings, type MyProfileData, type SocialSettings } from "../users/profileApi";
 import { validateProfileDraft } from "../users/profileValidation";
 import { ProfileIdentityCard } from "../users/ProfileIdentityCard";
+import { BlockedAccountsPanel } from "../social/BlockedAccountsPanel";
 
 type PrivacyDraft = Omit<SocialSettings, "updatedAt">;
 
@@ -107,7 +108,7 @@ export function ProfileSettingsPage({ onNavigate }: { onNavigate: (path: string)
   const enabled = data.capabilities.socialEnabled;
   return (
     <section className="settings-page">
-      <nav aria-label="Settings sections" className="settings-section-nav"><a href="#profile-settings">Profile</a><a href="#privacy-settings">Presence &amp; Privacy</a><a href="#account-settings">Account</a></nav>
+      <nav aria-label="Settings sections" className="settings-section-nav"><a href="#profile-settings">Profile</a><a href="#privacy-settings">Presence &amp; Privacy</a>{enabled ? <a href="#blocked-settings">Blocked Accounts</a> : null}<a href="#account-settings">Account</a></nav>
       {!enabled ? <p className="state-banner" role="status">Social profile tools are safely disabled on this environment. Display-name management remains available.</p> : null}
       {error ? <p className="form-error" ref={feedbackRef} role="alert" tabIndex={-1}>{error}</p> : null}
       {success ? <p aria-live="polite" className="state-banner success" ref={feedbackRef} tabIndex={-1}>{success}</p> : null}
@@ -134,6 +135,8 @@ export function ProfileSettingsPage({ onNavigate }: { onNavigate: (path: string)
         </div>
         <button className="primary-action" disabled={!enabled || savingPrivacy} type="submit">{savingPrivacy ? "Saving…" : "Save privacy"}</button>
       </form>
+
+      {enabled ? <BlockedAccountsPanel onNavigate={onNavigate} /> : null}
 
       <section className="surface-panel account-settings" id="account-settings" aria-labelledby="account-settings-title">
         <div className="settings-section-heading"><div><p className="eyebrow">Account</p><h2 id="account-settings-title">Permanent deletion</h2></div><span className="ui-badge">Re-auth required</span></div>

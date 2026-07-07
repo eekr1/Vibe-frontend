@@ -27,6 +27,7 @@ import {
   type RoomRealtimeSocket
 } from "../rooms/realtimeClient";
 import { YouTubeRoomPlayer } from "../rooms/YouTubeRoomPlayer";
+import { RelationshipActions } from "../social/RelationshipActions";
 
 type RoomShellPageProps = {
   onNavigate: (path: string) => void;
@@ -1195,6 +1196,12 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                     </span>
                   </div>
                   <div className="participant-actions">
+                    {nextParticipant.user.id !== currentUser?.id ? (
+                      <>
+                        <button className="text-action compact" onClick={() => onNavigate(`/users/${encodeURIComponent(nextParticipant.user.username)}`)} type="button">Profile</button>
+                        <RelationshipActions compact reportRoomId={room.id} showReport={false} targetLabel={nextParticipant.user.displayName} targetUserId={nextParticipant.user.id} />
+                      </>
+                    ) : null}
                     <button
                       className="text-action compact"
                       disabled={!canUseRoom}
