@@ -1,4 +1,4 @@
-﻿import { expect, test, type Page, type Route } from "@playwright/test";
+import { expect, test, type Page, type Route } from "@playwright/test";
 
 const me = { accountState: "active", avatarUrl: null, displayName: "Ada Lovelace", email: "ada@example.test", id: "me", role: "member", username: "ada" };
 const profile = (id: string, displayName: string, username: string) => ({ avatar: { initials: displayName.split(" ").map((part) => part[0]).join(""), kind: "initials" }, bio: null, displayName, id, memberSince: "2026-07", username, viewer: "authenticated" });
@@ -20,6 +20,7 @@ async function mockRailApi(page: Page) {
     if (path === "/social/notifications/summary" && method === "GET") return json(200, envelope(summary));
     if (path === "/social/notifications/read-all" && method === "POST") { summary = { actionableCount: 0, unreadCount: 0 }; return json(200, envelope(summary)); }
     if (path === "/social/friends" && method === "GET") return json(200, envelope({ items: [bob, grace], nextCursor: null }));
+    if (path === "/social/room-invites" && method === "GET") return json(200, envelope({ items: [], nextCursor: null }));
     if (path === "/social/friend-requests" && method === "GET") return json(200, envelope({ items: [
       { createdAt: "2026-07-07T10:00:00.000Z", direction: "incoming", expiresAt: "2026-08-06T10:00:00.000Z", profile: alan },
       { createdAt: "2026-07-07T11:00:00.000Z", direction: "outgoing", expiresAt: "2026-08-06T11:00:00.000Z", profile: profile("mira", "Mira Patel", "mira") }
@@ -49,8 +50,8 @@ test("Social Rail opens from topbar, sorts presence and reconciles request atten
   await expect(page.getByText("Last seen today")).toBeVisible();
 
   await page.getByLabel("Social sections").getByRole("tab", { name: /Requests/ }).click();
-  await expect(page.getByText("Incoming · expires")).toBeVisible();
-  await expect(page.getByText("Outgoing · expires")).toBeVisible();
+  await expect(page.getByText(/Incoming .* expires/)).toBeVisible();
+  await expect(page.getByText(/Outgoing .* expires/)).toBeVisible();
   await page.getByRole("button", { name: "Mark all read" }).click();
   await expect(page.getByRole("button", { name: "Social updates" })).toBeVisible();
 });

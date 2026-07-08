@@ -29,6 +29,7 @@ async function mockSocial(page: Page) {
     if (path === "/social/friend-requests" && method === "GET") return json(200, envelope({ items: requests, nextCursor: null }));
     if (path === "/social/blocks" && method === "GET") return json(200, envelope({ items: blocked, nextCursor: null }));
     if (path === "/social/people-watched" && method === "GET") return json(200, envelope({ items: watched, nextCursor: null }));
+    if (path === "/social/room-invites" && method === "GET") return json(200, envelope({ items: [], nextCursor: null }));
     if (path === "/social/friend-requests/alan/accept" && method === "POST") { requests = requests.filter((item) => item.profile.id !== "alan"); friends = [...friends, alan]; return json(200, envelope({ state: "friends" })); }
     if (path === "/social/friend-requests/bob/cancel" && method === "POST") { requests = requests.filter((item) => item.profile.id !== "bob"); return json(200, envelope({ state: "none" })); }
     if (path === "/social/friend-requests" && method === "POST") {

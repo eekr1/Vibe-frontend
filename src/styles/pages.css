@@ -1,4 +1,4 @@
-﻿.home-page,
+.home-page,
 .discover-page {
   display: grid;
   gap: var(--space-5);
@@ -1239,4 +1239,62 @@
   background: var(--color-warning-surface);
   border-color: var(--color-warning-border);
   color: var(--color-accent-soft);
+}
+
+.room-invite-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.room-invite-card {
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+.room-invite-card.is-compact {
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.85rem;
+}
+
+.room-invite-copy {
+  min-width: 0;
+}
+
+.room-invite-copy h3 {
+  margin: 0.15rem 0 0.3rem;
+  overflow-wrap: anywhere;
+}
+
+.room-invite-copy p {
+  margin: 0.25rem 0;
+}
+
+.room-invite-meta,
+.room-invite-warning {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.room-invite-warning {
+  color: var(--warning-text, #f7c66f);
+}
+
+.room-invite-actions {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.room-invite-card.is-compact .room-invite-actions {
+  align-items: flex-start;
+  justify-content: flex-start;
 }

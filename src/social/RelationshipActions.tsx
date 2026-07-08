@@ -9,13 +9,17 @@ import {
   removeFriend,
   respondToFriendRequest,
   sendFriendRequest,
+  sendRoomInvite,
   unblockMember
 } from "./socialApi";
 
 type Props = {
   compact?: boolean;
   initialRelationship?: RelationshipState;
+  inviteDisabled?: boolean;
+  inviteRoomId?: string | null;
   onChanged?: (relationship: RelationshipState) => void;
+  onInviteSent?: () => void;
   reportRoomId?: string;
   showReport?: boolean;
   targetLabel: string;
@@ -42,6 +46,16 @@ function describeError(error: unknown) {
   return error.message;
 }
 
+function describeInviteError(error: unknown) {
+  if (!(error instanceof ApiClientError)) return "Invite could not be sent. Please try again.";
+  if (error.code === "ROOM_FULL") return "This room is full right now.";
+  if (error.code === "ROOM_NOT_LIVE" || error.code === "ROOM_ENDED") return "This room is no longer live.";
+  if (error.code === "LIMIT_REACHED") return "Invite limit reached. Please wait before sending more.";
+  if (error.code === "NOT_ALLOWED") return "Only eligible friends can be invited to this room.";
+  if (["FORBIDDEN", "NOT_FOUND", "VALIDATION_FAILED"].includes(error.code)) return "This invite can no longer be sent. Refresh and try again.";
+  return error.message;
+}
+
 function confirmation(action: RelationshipAction, label: string) {
   if (action === "unfriend") return `Remove ${label} from your friends? They will not be notified.`;
   if (action === "block") return `Block ${label}? Friendship and pending requests will be removed, and you will not see each other's hosted rooms.`;
@@ -54,9 +68,9 @@ function nextRelationship(state: "blocked" | "friends" | "none" | "outgoing_pend
   return { actions, state };
 }
 
-export function RelationshipActions({ compact = false, initialRelationship, onChanged, reportRoomId, showReport = true, targetLabel, targetUserId }: Props) {
+export function RelationshipActions({ compact = false, initialRelationship, inviteDisabled = false, inviteRoomId = null, onChanged, onInviteSent, reportRoomId, showReport = true, targetLabel, targetUserId }: Props) {
   const [relationship, setRelationship] = useState<RelationshipState | null>(initialRelationship ?? null);
-  const [busy, setBusy] = useState<RelationshipAction | "refresh" | null>(initialRelationship ? null : "refresh");
+  const [busy, setBusy] = useState<RelationshipAction | "invite" | "refresh" | null>(initialRelationship ? null : "refresh");
   const [feedback, setFeedback] = useState<string | null>(null);
   const alive = useRef(true);
 
@@ -79,7 +93,22 @@ export function RelationshipActions({ compact = false, initialRelationship, onCh
     if (initialRelationship) setRelationship(initialRelationship);
     else void refresh();
     return () => { alive.current = false; };
-  }, [targetUserId]);
+  }, [targetUserId, initialRelationship]);
+
+  async function inviteFriend() {
+    if (!inviteRoomId) return;
+    setBusy("invite");
+    setFeedback(null);
+    try {
+      await sendRoomInvite(inviteRoomId, targetUserId);
+      setFeedback(`Invite sent to ${targetLabel}.`);
+      onInviteSent?.();
+    } catch (error) {
+      setFeedback(describeInviteError(error));
+    } finally {
+      if (alive.current) setBusy(null);
+    }
+  }
 
   async function act(action: RelationshipAction) {
     const prompt = confirmation(action, targetLabel);
@@ -113,12 +142,19 @@ export function RelationshipActions({ compact = false, initialRelationship, onCh
     }
   }
 
-  if (busy === "refresh" && !relationship) return <span aria-live="polite" className="relationship-status">Loading actions…</span>;
+  if (busy === "refresh" && !relationship) return <span aria-live="polite" className="relationship-status">Loading actions...</span>;
   if (!relationship || relationship.state === "unavailable") return <span className="relationship-status">Social actions unavailable</span>;
+
+  const canInvite = Boolean(inviteRoomId && relationship.state === "friends");
 
   return (
     <div className={compact ? "relationship-control is-compact" : "relationship-control"}>
       <div aria-label={`Relationship actions for ${targetLabel}`} className="relationship-actions">
+        {canInvite ? (
+          <button className="primary-action compact" disabled={busy !== null || inviteDisabled} onClick={() => void inviteFriend()} type="button">
+            {busy === "invite" ? "Inviting..." : "Invite"}
+          </button>
+        ) : null}
         {relationship.actions.filter((action) => showReport || action !== "report").map((action) => (
           <button
             className={action === "block" ? "danger-action compact" : action === "send" || action === "accept" ? "primary-action compact" : "secondary-action compact"}
@@ -127,7 +163,7 @@ export function RelationshipActions({ compact = false, initialRelationship, onCh
             onClick={() => void act(action)}
             type="button"
           >
-            {busy === action ? "Working…" : labels[action]}
+            {busy === action ? "Working..." : labels[action]}
           </button>
         ))}
       </div>
