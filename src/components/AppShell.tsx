@@ -1,5 +1,8 @@
+﻿import { useEffect, useState } from "react";
 import type { RouteDefinition } from "../lib/routes";
 import { useAuth } from "../auth/AuthContext";
+import { getNotificationSummary, type NotificationSummary } from "../social/socialApi";
+import { SocialRail } from "../social/SocialRail";
 
 type AppShellProps = {
   activeRoute: RouteDefinition;
@@ -16,10 +19,30 @@ function getInitials(displayName: string) {
     .join("") || "V";
 }
 
+const hiddenSocialRoutes = new Set(["*", "/admin", "/auth", "/auth/reset", "/community-guidelines", "/privacy", "/support", "/terms"]);
+const emptySummary: NotificationSummary = { actionableCount: 0, unreadCount: 0 };
+
 export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
   const Page = activeRoute.component;
   const { currentUser, isCheckingSession, logout } = useAuth();
   const primaryRoutes = routes.filter((route) => route.showInPrimaryNav === true);
+  const socialEligible = Boolean(currentUser && !hiddenSocialRoutes.has(activeRoute.path));
+  const socialMode = activeRoute.path === "/room" ? "drawer" : "rail";
+  const [socialOpen, setSocialOpen] = useState(() => window.localStorage.getItem("vibehall:social-rail-open") === "true");
+  const [socialSummary, setSocialSummary] = useState<NotificationSummary>(emptySummary);
+  const socialBadge = socialSummary.unreadCount + socialSummary.actionableCount;
+
+  useEffect(() => {
+    window.localStorage.setItem("vibehall:social-rail-open", socialOpen ? "true" : "false");
+  }, [socialOpen]);
+
+  useEffect(() => {
+    if (isCheckingSession) return;
+    if (!socialEligible) { setSocialOpen(false); setSocialSummary(emptySummary); return; }
+    let active = true;
+    getNotificationSummary().then((summary) => { if (active) setSocialSummary(summary); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [socialEligible, isCheckingSession, currentUser?.id]);
 
   function navigateAuth(mode: "login" | "signup", returnTo = `${window.location.pathname}${window.location.search}`) {
     const params = new URLSearchParams({ mode, returnTo });
@@ -62,6 +85,11 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
                 <span className="account-chip is-loading">Checking account</span>
               ) : currentUser ? (
                 <>
+                  {socialEligible ? (
+                    <button aria-controls="social-rail" aria-expanded={socialOpen} aria-label={`Social updates${socialBadge ? `, ${socialBadge} unread or actionable` : ""}`} className="text-action compact shell-social-action" onClick={() => setSocialOpen((value) => !value)} type="button">
+                      Social{socialBadge ? <span className="social-badge" aria-hidden="true">{socialBadge}</span> : null}
+                    </button>
+                  ) : null}
                   <button className="text-action compact shell-friends-action" onClick={() => onNavigate("/friends")} type="button">
                     Friends
                   </button>
@@ -100,7 +128,7 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
         </div>
       </header>
 
-      <main className="main-surface">
+      <main className={socialEligible && socialOpen && socialMode === "rail" ? "main-surface has-social-rail" : "main-surface"}>
         <section className="page-masthead" aria-labelledby="page-title">
           <p className="eyebrow">{activeRoute.label}</p>
           <h1 id="page-title">{activeRoute.title}</h1>
@@ -108,6 +136,8 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
 
         <Page onNavigate={onNavigate} />
       </main>
+
+      {socialEligible ? <SocialRail mode={socialMode} onBadgeChange={setSocialSummary} onClose={() => setSocialOpen(false)} onNavigate={onNavigate} open={socialOpen} /> : null}
 
       <footer className="trust-footer" aria-label="Platform trust links">
         <div className="trust-footer-inner">

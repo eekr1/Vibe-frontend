@@ -68,6 +68,7 @@ type ServerToClientEvents = {
   ) => void;
   "presence.friend.updated": (payload: RealtimeEnvelope<{ presence: FriendPresence; reason: "offline" | "online" | "reconciled" }>) => void;
   "presence.friends.snapshot": (payload: RealtimeEnvelope<{ degraded: boolean; items: FriendPresence[] }>) => void;
+  "relationship.invalidated": (payload: RealtimeEnvelope<{ reason: "block" | "friendship" | "request" | "unblock" }>) => void;
   "room.access.revoked": (
     payload: RealtimeEnvelope<{
       actionType: ModerationActionType;

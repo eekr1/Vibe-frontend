@@ -206,3 +206,32 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+@media (max-width: 1040px) {
+  .main-surface.has-social-rail {
+    padding-right: var(--page-gutter);
+  }
+}
+
+@media (max-width: 760px) {
+  .shell-social-action {
+    display: inline-flex;
+  }
+
+  .social-rail {
+    inset: auto var(--space-3) var(--space-3) var(--space-3);
+    max-height: min(78vh, 38rem);
+    transform: translateY(1rem);
+    width: auto;
+  }
+
+  .social-rail.is-open {
+    transform: translateY(0);
+  }
+
+  .social-rail-header,
+  .social-rail-request-tools {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
