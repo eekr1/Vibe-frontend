@@ -66,10 +66,9 @@ function activeRoomId() {
 }
 
 function inviteSortValue(invite: RoomInvite) {
-  if (invite.state === "pending" && invite.actions.canAccept) return 0;
-  if (invite.state === "pending") return 1;
-  if (invite.state === "accepted") return 2;
-  return 3;
+  if (invite.actions.canAccept) return 0;
+  if (invite.actions.canRevoke) return 1;
+  return 2;
 }
 
 export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, open }: Props) {
@@ -89,9 +88,7 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, open }: P
   const incoming = requests.filter((item) => item.direction === "incoming");
   const outgoing = requests.filter((item) => item.direction === "outgoing");
   const actionableInvites = invites.filter((invite) => invite.state === "pending" && invite.actions.canAccept);
-  const orderedInvites = useMemo(() => [...invites].sort((left, right) => inviteSortValue(left) - inviteSortValue(right) || new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()), [invites]);
-  const activeInvites = orderedInvites.filter((invite) => ["accepted", "pending"].includes(invite.state));
-  const recentInviteHistory = orderedInvites.filter((invite) => !["accepted", "pending"].includes(invite.state));
+  const visibleInvites = useMemo(() => invites.filter((invite) => invite.state === "pending").sort((left, right) => inviteSortValue(left) - inviteSortValue(right) || new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()), [invites]);
   const filteredFriends = useMemo(() => {
     const query = filter.trim().toLocaleLowerCase();
     const sorted = [...friends].sort((left, right) => {
@@ -167,7 +164,9 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, open }: P
   }
 
   function replaceInvite(nextInvite: RoomInvite) {
-    setInvites((current) => current.map((invite) => invite.id === nextInvite.id ? nextInvite : invite));
+    setInvites((current) => nextInvite.state === "pending"
+      ? current.map((invite) => invite.id === nextInvite.id ? nextInvite : invite)
+      : current.filter((invite) => invite.id !== nextInvite.id));
     void refresh();
   }
 
@@ -221,11 +220,9 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, open }: P
           <section className="social-rail-section" aria-label="Room invites">
             <div className="social-rail-request-tools"><button className="secondary-action compact" onClick={() => void markAllRead()} type="button">Mark all read</button><button className="text-action compact" onClick={() => navigate("/friends?view=invites")} type="button">Open full invites</button></div>
             <div className="social-rail-list room-invite-list">
-              {activeInvites.map((invite) => <RoomInviteCard compact invite={invite} key={invite.id} onChanged={replaceInvite} onNavigate={navigate} />)}
-              {recentInviteHistory.length ? <p className="eyebrow">Recent invite history</p> : null}
-              {recentInviteHistory.map((invite) => <RoomInviteCard compact invite={invite} key={invite.id} onChanged={replaceInvite} onNavigate={navigate} />)}
+              {visibleInvites.map((invite) => <RoomInviteCard compact invite={invite} key={invite.id} onChanged={replaceInvite} onNavigate={navigate} />)}
             </div>
-            {!invites.length ? <p className="empty-state">No room invites right now.</p> : null}
+            {!visibleInvites.length ? <p className="empty-state">No room invites right now.</p> : null}
           </section>
         ) : (
           <section className="social-rail-section" aria-label="Friend requests">

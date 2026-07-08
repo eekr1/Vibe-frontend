@@ -39,10 +39,9 @@ function initialRelationship(state: RelationshipState["state"]): RelationshipSta
 }
 
 function inviteRank(invite: RoomInvite) {
-  if (invite.state === "pending" && invite.actions.canAccept) return 0;
-  if (invite.state === "pending") return 1;
-  if (invite.state === "accepted") return 2;
-  return 3;
+  if (invite.actions.canAccept) return 0;
+  if (invite.actions.canRevoke) return 1;
+  return 2;
 }
 
 export function FriendsPage({ onNavigate }: { onNavigate: (path: string) => void }) {
@@ -82,9 +81,7 @@ export function FriendsPage({ onNavigate }: { onNavigate: (path: string) => void
     return query ? friends.filter((profile) => `${profile.displayName} ${profile.username}`.toLocaleLowerCase().includes(query)) : friends;
   }, [filter, friends]);
   const visibleRequests = requests.filter((item) => item.direction === view);
-  const orderedInvites = useMemo(() => [...invites].sort((left, right) => inviteRank(left) - inviteRank(right) || new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()), [invites]);
-  const activeInvites = orderedInvites.filter((invite) => ["accepted", "pending"].includes(invite.state));
-  const recentInviteHistory = orderedInvites.filter((invite) => !["accepted", "pending"].includes(invite.state));
+  const visibleInvites = useMemo(() => invites.filter((invite) => invite.state === "pending").sort((left, right) => inviteRank(left) - inviteRank(right) || new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime()), [invites]);
 
   function changeView(next: View) {
     setView(next); setFilter("");
@@ -92,7 +89,7 @@ export function FriendsPage({ onNavigate }: { onNavigate: (path: string) => void
     window.history.replaceState({}, "", url);
   }
   function reconcile() { setRefreshKey((current) => current + 1); }
-  function replaceInvite(nextInvite: RoomInvite) { setInvites((items) => items.map((item) => item.id === nextInvite.id ? nextInvite : item)); reconcile(); }
+  function replaceInvite(nextInvite: RoomInvite) { setInvites((items) => nextInvite.state === "pending" ? items.map((item) => item.id === nextInvite.id ? nextInvite : item) : items.filter((item) => item.id !== nextInvite.id)); reconcile(); }
   async function loadMore() {
     const key = view === "incoming" || view === "outgoing" ? "requests" : view;
     const cursor = cursors[key];
@@ -117,7 +114,7 @@ export function FriendsPage({ onNavigate }: { onNavigate: (path: string) => void
   if (!isCheckingSession && !currentUser) return <AuthRequiredGate body="Friends, requests, reconnections, invites, and blocked accounts are private member tools." onLogin={() => onNavigate("/auth?mode=login&returnTo=%2Ffriends")} onSignup={() => onNavigate("/auth?mode=signup&returnTo=%2Ffriends")} title="Log in to manage your connections." />;
   if (isCheckingSession) return <section className="surface-panel"><div aria-live="polite" className="inline-loading" role="status"><span aria-hidden="true" className="loader" />Checking your account</div></section>;
 
-  const isEmpty = (view === "friends" && visibleFriends.length === 0) || ((view === "incoming" || view === "outgoing") && visibleRequests.length === 0) || (view === "invites" && invites.length === 0) || (view === "watched" && watched.length === 0) || (view === "blocked" && blocked.length === 0);
+  const isEmpty = (view === "friends" && visibleFriends.length === 0) || ((view === "incoming" || view === "outgoing") && visibleRequests.length === 0) || (view === "invites" && visibleInvites.length === 0) || (view === "watched" && watched.length === 0) || (view === "blocked" && blocked.length === 0);
 
   return (
     <section className="friends-page">
@@ -134,9 +131,7 @@ export function FriendsPage({ onNavigate }: { onNavigate: (path: string) => void
         <div className={view === "invites" ? "room-invite-list" : "social-identity-list"}>
           {view === "friends" ? visibleFriends.map((profile) => <SocialIdentity initialRelationship={initialRelationship("friends")} key={profile.id} onChanged={reconcile} onNavigate={onNavigate} profile={profile} />) : null}
           {view === "incoming" || view === "outgoing" ? visibleRequests.map((item) => <SocialIdentity context={`Expires ${new Date(item.expiresAt).toLocaleDateString()}`} initialRelationship={initialRelationship(item.direction === "incoming" ? "incoming_pending" : "outgoing_pending")} key={`${item.direction}:${item.profile.id}`} onChanged={reconcile} onNavigate={onNavigate} profile={item.profile} />) : null}
-          {view === "invites" ? activeInvites.map((invite) => <RoomInviteCard invite={invite} key={invite.id} onChanged={replaceInvite} onNavigate={onNavigate} />) : null}
-          {view === "invites" && recentInviteHistory.length ? <p className="eyebrow">Recent invite history</p> : null}
-          {view === "invites" ? recentInviteHistory.map((invite) => <RoomInviteCard invite={invite} key={invite.id} onChanged={replaceInvite} onNavigate={onNavigate} />) : null}
+          {view === "invites" ? visibleInvites.map((invite) => <RoomInviteCard invite={invite} key={invite.id} onChanged={replaceInvite} onNavigate={onNavigate} />) : null}
           {view === "watched" ? watched.map((item) => <SocialIdentity context={item.label} initialRelationship={initialRelationship("none")} key={item.profile.id} onChanged={reconcile} onDismiss={() => void dismiss(item.profile)} onNavigate={onNavigate} profile={item.profile} />) : null}
           {view === "blocked" ? blocked.map((item) => <SocialIdentity context={`Blocked ${new Date(item.blockedAt).toLocaleDateString()}`} initialRelationship={initialRelationship("blocked")} key={item.profile.id} onChanged={reconcile} onNavigate={onNavigate} profile={item.profile} />) : null}
         </div>

@@ -68,6 +68,11 @@ async function mockInviteApi(page: Page) {
       invites = [accepted];
       return json(200, envelope({ invite: accepted }));
     }
+    if (path === "/social/room-invites/invite-private/decline" && method === "POST") {
+      const declined = { ...pendingPrivateInvite, actions: { canAccept: false, canDecline: false, canRevoke: false }, respondedAt: "2026-07-08T10:06:00.000Z", state: "declined", terminalAt: "2026-07-08T10:06:00.000Z", terminalReason: "declined", updatedAt: "2026-07-08T10:06:00.000Z" };
+      invites = [declined];
+      return json(200, envelope({ invite: declined }));
+    }
     if (path === "/social/relationships/grace" && method === "GET") return json(200, envelope({ relationship: { actions: ["unfriend", "block", "report"], state: "friends" } }));
     if (path === "/rooms/public-room" && method === "GET") return json(200, envelope({ room: room("public-room", "Public Room", "public") }));
     if (path === "/rooms/private-room" && method === "GET") return json(200, envelope({ room: room("private-room", "Hidden Late Night Room", "private") }));
@@ -99,4 +104,15 @@ test("Room drawer lets an active member invite a confirmed friend without compre
   await expect(page.locator("main.main-surface")).not.toHaveClass(/has-social-rail/);
   await page.getByRole("button", { name: "Invite" }).click();
   await expect(page.getByText("Invite sent to Grace Hopper.")).toBeVisible();
+});
+test("declined invites disappear from invite surfaces without history", async ({ page }) => {
+  await mockInviteApi(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: /Social updates/ }).click();
+  await page.getByLabel("Social sections").getByRole("tab", { name: /Invites/ }).click();
+  await expect(page.getByText("Hidden Late Night Room")).toBeVisible();
+  await page.getByRole("button", { name: "Decline" }).click();
+  await expect(page.getByText("Hidden Late Night Room")).toHaveCount(0);
+  await expect(page.getByText("Recent invite history")).toHaveCount(0);
+  await expect(page.getByText("No room invites right now.")).toBeVisible();
 });
