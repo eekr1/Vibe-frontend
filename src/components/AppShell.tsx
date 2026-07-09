@@ -1,8 +1,9 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { RouteDefinition } from "../lib/routes";
 import { useAuth } from "../auth/AuthContext";
 import { getNotificationSummary, type NotificationSummary } from "../social/socialApi";
 import { SocialRail } from "../social/SocialRail";
+import { ConversationPanel } from "../social/ConversationPanel";
 
 type AppShellProps = {
   activeRoute: RouteDefinition;
@@ -31,6 +32,9 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
   const [socialOpen, setSocialOpen] = useState(() => window.localStorage.getItem("vibehall:social-rail-open") === "true");
   const [socialSummary, setSocialSummary] = useState<NotificationSummary>(emptySummary);
   const socialBadge = socialSummary.unreadCount + socialSummary.actionableCount;
+
+  const [dockedConversationId, setDockedConversationId] = useState<string | null>(null);
+  const [dockedMinimized, setDockedMinimized] = useState(false);
 
   useEffect(() => {
     window.localStorage.setItem("vibehall:social-rail-open", socialOpen ? "true" : "false");
@@ -137,7 +141,22 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
         <Page onNavigate={onNavigate} />
       </main>
 
-      {socialEligible ? <SocialRail mode={socialMode} onBadgeChange={setSocialSummary} onClose={() => setSocialOpen(false)} onNavigate={onNavigate} open={socialOpen} /> : null}
+      {socialEligible ? (
+        <>
+          <SocialRail mode={socialMode} onBadgeChange={setSocialSummary} onClose={() => setSocialOpen(false)} onNavigate={onNavigate} open={socialOpen} onOpenConversation={(id) => { setDockedConversationId(id); setDockedMinimized(false); }} />
+          {dockedConversationId && (
+            <div className="docked-conversation-wrapper">
+              <ConversationPanel
+                conversationId={dockedConversationId}
+                minimized={dockedMinimized}
+                onClose={() => setDockedConversationId(null)}
+                onMinimizeToggle={() => setDockedMinimized(!dockedMinimized)}
+                onNavigate={onNavigate}
+              />
+            </div>
+          )}
+        </>
+      ) : null}
 
       <footer className="trust-footer" aria-label="Platform trust links">
         <div className="trust-footer-inner">

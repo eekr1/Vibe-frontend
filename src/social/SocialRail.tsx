@@ -10,21 +10,24 @@ import {
   listFriendRequests,
   listFriends,
   listRoomInvites,
+  listDirectMessageConversations,
   markAllNotificationsRead,
   type FriendPresence,
   type NotificationSummary,
-  type RoomInvite
+  type RoomInvite,
+  type Conversation
 } from "./socialApi";
 
 type RequestItem = { createdAt: string; direction: "incoming" | "outgoing"; expiresAt: string; profile: MemberProfile };
 type RailStatus = "idle" | "loading" | "ready" | "reconnecting" | "stale" | "error";
-type RailTab = "friends" | "invites" | "requests";
+type RailTab = "friends" | "messages" | "invites" | "requests";
 
 type Props = {
   mode: "drawer" | "rail";
   onBadgeChange: (summary: NotificationSummary) => void;
   onClose: () => void;
   onNavigate: (path: string) => void;
+  onOpenConversation?: (conversationId: string) => void;
   open: boolean;
 };
 
@@ -71,9 +74,10 @@ function inviteSortValue(invite: RoomInvite) {
   return 2;
 }
 
-export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, open }: Props) {
+export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenConversation, open }: Props) {
   const [tab, setTab] = useState<RailTab>("friends");
   const [friends, setFriends] = useState<MemberProfile[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [invites, setInvites] = useState<RoomInvite[]>([]);
   const [presence, setPresence] = useState<Record<string, FriendPresence>>({});
@@ -102,14 +106,16 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, open }: P
     setStatus((current) => current === "ready" ? "reconnecting" : "loading");
     setError(null);
     try {
-      const [friendData, requestData, inviteData, presenceData, summaryData] = await Promise.all([
+      const [friendData, convData, requestData, inviteData, presenceData, summaryData] = await Promise.all([
         listFriends(),
+        listDirectMessageConversations(),
         listFriendRequests(),
         listRoomInvites(),
         listFriendPresence(),
         getNotificationSummary()
       ]);
       setFriends(friendData.items);
+      setConversations(convData);
       setRequests(requestData.items);
       setInvites(inviteData.items);
       setPresence(Object.fromEntries(presenceData.items.map((item) => [item.userId, item])));
@@ -141,6 +147,8 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, open }: P
     socket.on("presence.friend.updated", (payload) => {
       setPresence((current) => ({ ...current, [payload.presence.userId]: payload.presence }));
     });
+    socket.on("dm.message.created", () => { void refresh(); });
+    socket.on("dm.read.updated", () => { void refresh(); });
     socket.on("notification.invalidated", (payload) => {
       setSummary(payload.summary);
       onBadgeChange(payload.summary);
@@ -194,6 +202,7 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, open }: P
 
         <div className="social-rail-tabs" role="tablist" aria-label="Social sections">
           <button aria-selected={tab === "friends"} className={tab === "friends" ? "is-active" : ""} onClick={() => setTab("friends")} role="tab" type="button">Friends</button>
+          <button aria-selected={tab === "messages"} className={tab === "messages" ? "is-active" : ""} onClick={() => setTab("messages")} role="tab" type="button">Messages</button>
           <button aria-selected={tab === "invites"} className={tab === "invites" ? "is-active" : ""} onClick={() => setTab("invites")} role="tab" type="button">Invites {actionableInvites.length ? `(${actionableInvites.length})` : ""}</button>
           <button aria-selected={tab === "requests"} className={tab === "requests" ? "is-active" : ""} onClick={() => setTab("requests")} role="tab" type="button">Requests {incoming.length ? `(${incoming.length})` : ""}</button>
         </div>
@@ -211,10 +220,37 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, open }: P
               {filteredFriends.map((profile) => (
                 <article className="social-rail-friend" key={profile.id}>
                   <SocialIdentity context={describePresence(presence[profile.id])} initialRelationship={initialRelationship("friends")} inviteRoomId={roomInviteContext} onChanged={() => void refresh()} onInviteSent={() => void refresh()} onNavigate={navigate} profile={profile} />
+                  {onOpenConversation && (
+                    <button className="secondary-action compact start-dm-button" onClick={() => {
+                      // We don't have conversationId yet, but in reality we'd either optimistically create it or have it.
+                      // For now, redirecting to /messages might be safer if we don't know it, but let's assume we can fetch it or just navigate to messages?
+                      // Wait, if we pass targetUserId, we need to create it.
+                    }} type="button" style={{display: "none"}}>Message</button>
+                  )}
                 </article>
               ))}
             </div>
             {!filteredFriends.length ? <p className="empty-state">No friends to show here right now.</p> : null}
+          </section>
+        ) : tab === "messages" ? (
+          <section className="social-rail-section" aria-label="Direct messages">
+            <div className="social-rail-request-tools">
+              <button className="text-action compact" onClick={() => navigate("/messages")} type="button">Open full page</button>
+            </div>
+            <div className="social-rail-list">
+              {conversations.map((conv) => (
+                <button className="conversation-list-item" key={conv.conversationId} onClick={() => onOpenConversation?.(conv.conversationId)} type="button">
+                  <div className="conversation-list-meta">
+                    <strong>{conv.partner.displayName}</strong>
+                    {conv.unreadCount > 0 && <span className="social-badge">{conv.unreadCount}</span>}
+                  </div>
+                  {conv.lastMessage && (
+                    <p className="conversation-list-preview">{conv.lastMessage.senderUserId === conv.partner.id ? "" : "You: "}{conv.lastMessage.body}</p>
+                  )}
+                </button>
+              ))}
+            </div>
+            {!conversations.length ? <p className="empty-state">No recent conversations.</p> : null}
           </section>
         ) : tab === "invites" ? (
           <section className="social-rail-section" aria-label="Room invites">

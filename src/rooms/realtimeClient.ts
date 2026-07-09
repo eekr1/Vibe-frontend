@@ -1,4 +1,4 @@
-﻿import { io, type Socket } from "socket.io-client";
+import { io, type Socket } from "socket.io-client";
 import type { CurrentUser } from "../auth/AuthContext";
 import type { NotificationSummary, FriendPresence } from "../social/socialApi";
 import type { ModerationAction, ModerationActionType, Room, RoomMessage, RoomParticipant } from "./roomApi";
@@ -62,6 +62,10 @@ type ServerToClientEvents = {
       targetUserId: string;
     }>
   ) => void;
+  "dm.conversation.deleted_for_user": (payload: RealtimeEnvelope<{ cleanupAfter: string | null; conversationId: string; userId: string }>) => void;
+  "dm.delivered.updated": (payload: RealtimeEnvelope<{ conversationId: string; messageId: string; userId: string }>) => void;
+  "dm.message.created": (payload: RealtimeEnvelope<{ conversationId: string; messageId: string; recipientUserId: string; senderUserId: string }>) => void;
+  "dm.read.updated": (payload: RealtimeEnvelope<{ conversationId: string; messageId: string; userId: string }>) => void;
   "notification.invalidated": (payload: RealtimeEnvelope<{ reason: "block" | "friendship" | "notification" | "request" | "unblock"; summary: NotificationSummary }>) => void;
   "playback.state.updated": (
     payload: RealtimeEnvelope<{ playback: PlaybackState; roomId: string; updatedByUserId: string }>

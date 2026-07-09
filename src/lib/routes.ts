@@ -16,6 +16,7 @@ import { MemberProfilePage } from "../pages/MemberProfilePage";
 import { OwnerProfilePage } from "../pages/OwnerProfilePage";
 import { RoomShellPage } from "../pages/RoomShellPage";
 import { FriendsPage } from "../pages/FriendsPage";
+import { MessagesPage } from "../pages/MessagesPage";
 
 export type RouteDefinition = {
   component: ComponentType<{ onNavigate: (path: string) => void }>;
@@ -58,6 +59,12 @@ export const routes: RouteDefinition[] = [
     label: "Friends",
     path: "/friends",
     title: "Friends and requests"
+  },
+  {
+    component: MessagesPage,
+    label: "Messages",
+    path: "/messages",
+    title: "Direct messages"
   },
   {
     component: AuthPage,
