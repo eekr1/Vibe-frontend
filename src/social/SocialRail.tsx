@@ -108,8 +108,8 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
     return query ? sorted.filter((profile) => `${profile.displayName} ${profile.username}`.toLocaleLowerCase().includes(query)) : sorted;
   }, [filter, friends, presence]);
 
-  async function refresh() {
-    setStatus((current) => current === "ready" ? "reconnecting" : "loading");
+  async function refresh(options: { quiet?: boolean } = {}) {
+    if (!options.quiet) setStatus((current) => current === "ready" ? "reconnecting" : "loading");
     setError(null);
     setDirectMessagesError(null);
     try {
@@ -164,14 +164,14 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
     socket.on("presence.friend.updated", (payload) => {
       setPresence((current) => ({ ...current, [payload.presence.userId]: payload.presence }));
     });
-    socket.on("dm.message.created", () => { void refresh(); });
-    socket.on("dm.read.updated", () => { void refresh(); });
+    socket.on("dm.message.created", () => { void refresh({ quiet: true }); });
+    socket.on("dm.read.updated", () => { void refresh({ quiet: true }); });
     socket.on("notification.invalidated", (payload) => {
       setSummary(payload.summary);
       onBadgeChange(payload.summary);
-      void refresh();
+      void refresh({ quiet: true });
     });
-    socket.on("relationship.invalidated", () => { void refresh(); });
+    socket.on("relationship.invalidated", () => { void refresh({ quiet: true }); });
     return () => {
       socket.disconnect();
       socketRef.current = null;

@@ -28,7 +28,6 @@ export function useDirectMessageRealtime(handlers: Handlers) {
       handlersRef.current.onRefresh?.();
     });
     socket.on("relationship.invalidated", () => handlersRef.current.onRefresh?.());
-    socket.on("notification.invalidated", () => handlersRef.current.onRefresh?.());
     return () => {
       socket.disconnect();
     };

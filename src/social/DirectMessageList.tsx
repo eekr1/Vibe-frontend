@@ -18,16 +18,20 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [invites, setInvites] = useState<RoomInvite[]>([]);
   const [loading, setLoading] = useState(true);
+  const lastReadMessageIdRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const markVisibleRead = useCallback((items: DirectMessage[]) => {
     const latest = items.at(-1);
     if (!latest) return;
-    void markDirectMessagesRead(conversationId, latest.id);
+    if (latest.id === lastReadMessageIdRef.current) return;
+    lastReadMessageIdRef.current = latest.id;
+    void markDirectMessagesRead(conversationId, latest.id).catch(() => {
+      if (lastReadMessageIdRef.current === latest.id) lastReadMessageIdRef.current = null;
+    });
   }, [conversationId]);
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (options: { silent?: boolean } = {}) => {
+    if (!options.silent) setLoading(true);
     try {
       const [msgPage, invPage] = await Promise.all([
         listDirectMessages(conversationId),
@@ -37,12 +41,12 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
       setInvites(invPage.items.filter((invite) => invite.inviter.id === partnerId || invite.recipient.id === partnerId));
       markVisibleRead(msgPage.items);
     } finally {
-      setLoading(false);
+      if (!options.silent) setLoading(false);
     }
   }, [conversationId, markVisibleRead, partnerId]);
-
   useEffect(() => {
     let active = true;
+    lastReadMessageIdRef.current = null;
     setLoading(true);
     Promise.all([
       listDirectMessages(conversationId),
@@ -65,10 +69,15 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
       setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message]);
       if (message.senderUserId === partnerId) {
         void markDirectMessagesDelivered(conversationId, message.id);
-        void markDirectMessagesRead(conversationId, message.id);
+        if (lastReadMessageIdRef.current !== message.id) {
+          lastReadMessageIdRef.current = message.id;
+          void markDirectMessagesRead(conversationId, message.id).catch(() => {
+            if (lastReadMessageIdRef.current === message.id) lastReadMessageIdRef.current = null;
+          });
+        }
       }
     },
-    onRefresh: () => { void loadData(); }
+    onRefresh: () => { void loadData({ silent: true }); }
   });
 
   useEffect(() => {

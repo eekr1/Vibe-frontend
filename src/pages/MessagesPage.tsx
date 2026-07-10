@@ -25,8 +25,8 @@ export function MessagesPage({ onNavigate }: { onNavigate: (path: string) => voi
   const [error, setError] = useState<string | null>(null);
   const [featureDisabled, setFeatureDisabled] = useState(false);
 
-  const refresh = useCallback(async (preferredConversationId?: string | null) => {
-    setLoading(true);
+  const refresh = useCallback(async (preferredConversationId?: string | null, options: { silent?: boolean } = {}) => {
+    if (!options.silent) setLoading(true);
     setError(null);
     try {
       const page = await listDirectMessageConversations();
@@ -46,10 +46,9 @@ export function MessagesPage({ onNavigate }: { onNavigate: (path: string) => voi
       setFeatureDisabled(isFeatureDisabled(caught));
       setError(messageError(caught));
     } finally {
-      setLoading(false);
+      if (!options.silent) setLoading(false);
     }
   }, [activeConversationId, targetUserId]);
-
   useEffect(() => {
     void refresh(null);
   }, []);
@@ -58,8 +57,8 @@ export function MessagesPage({ onNavigate }: { onNavigate: (path: string) => voi
     onConversationDeleted: (payload) => {
       if (payload.conversationId === activeConversationId) setActiveConversationId(null);
     },
-    onMessageCreated: (payload) => { void refresh(payload.conversationId); },
-    onRefresh: () => { void refresh(activeConversationId); }
+    onMessageCreated: (payload) => { void refresh(payload.conversationId, { silent: true }); },
+    onRefresh: () => { void refresh(activeConversationId, { silent: true }); }
   });
 
   const activeConversation = conversations.find((conversation) => conversation.conversationId === activeConversationId) ?? null;
