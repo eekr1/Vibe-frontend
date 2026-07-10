@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type DirectMessage, listDirectMessages, markDirectMessagesDelivered, markDirectMessagesRead, listRoomInvites, type RoomInvite } from "./socialApi";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type DirectMessage, blockMember, listDirectMessages, markDirectMessagesDelivered, markDirectMessagesRead, listRoomInvites, type RoomInvite } from "./socialApi";
 import { RoomInviteCard } from "./RoomInviteCard";
+import { ReportDialog } from "./ReportDialog";
 import { useDirectMessageRealtime } from "./useDirectMessageRealtime";
 
 type Props = {
@@ -18,6 +19,7 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [invites, setInvites] = useState<RoomInvite[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeReportMessage, setActiveReportMessage] = useState<DirectMessage | null>(null);
   const lastReadMessageIdRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -98,6 +100,10 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
     setInvites((current) => current.map((invite) => invite.id === nextInvite.id ? nextInvite : invite));
   }
 
+  async function blockReportedMember() {
+    await blockMember(partnerId);
+  }
+
   function renderMessageBody(body: string, linkTokens: DirectMessage["linkTokens"]) {
     if (!linkTokens || linkTokens.length === 0) return body;
 
@@ -130,8 +136,15 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
                 <div className={`dm-message-bubble ${isMine ? "is-mine" : "is-theirs"}`} key={`msg-${message.id}`}>
                   <div className="dm-message-content">{renderMessageBody(message.body, message.linkTokens)}</div>
                   <div className="dm-message-meta">
-                    {item.date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    {isMine && message.state === "visible" ? <span className="dm-status"> Sent</span> : null}
+                    <span>
+                      {item.date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      {isMine && message.state === "visible" ? <span className="dm-status"> Sent</span> : null}
+                    </span>
+                    {!isMine && message.state === "visible" ? (
+                      <button className="text-action compact dm-report-action" onClick={() => setActiveReportMessage(message)} type="button">
+                        Report
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               );
@@ -145,6 +158,15 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
         </div>
       )}
       {readOnly ? <p className="form-feedback">This conversation is read-only.</p> : null}
+      {activeReportMessage ? (
+        <ReportDialog
+          onBlock={blockReportedMember}
+          onClose={() => setActiveReportMessage(null)}
+          targetId={activeReportMessage.id}
+          targetLabel="this message"
+          targetType="direct_message"
+        />
+      ) : null}
     </div>
   );
 }

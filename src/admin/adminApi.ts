@@ -5,7 +5,7 @@ export type AdminRole = "admin" | "member";
 export type AdminRoomState = "deleted" | "ended" | "live";
 export type AdminRoomVisibility = "private" | "public";
 export type AdminReportStatus = "action_taken" | "dismissed" | "escalated" | "open" | "reviewed";
-export type AdminReportTargetType = "message" | "room" | "user";
+export type AdminReportTargetType = "direct_message" | "message" | "profile" | "room" | "user";
 export type AdminModerationActionType = "ban" | "kick";
 export type AdminActionType =
   | "account_banned"
@@ -258,6 +258,76 @@ export type AdminReportDetail = {
   report: AdminReport;
 };
 
+export type AdminReportEvidenceAccessLog = {
+  action: string;
+  actor: AdminUserSummary | null;
+  actorUserId: string;
+  createdAt: string;
+  expiresAt: string | null;
+  id: string;
+};
+
+export type AdminReportEvidence = {
+  accessLogs?: AdminReportEvidenceAccessLog[];
+  byteSize: number;
+  captureVersion: number;
+  checksumSha256: string;
+  contentEncoding: string;
+  createdAt: string;
+  encryptionAlg: string;
+  id: string;
+  kind: string;
+  retentionState: string;
+  updatedAt: string;
+};
+
+export type AdminReportFocusedMessage = {
+  body: string;
+  createdAt: string;
+  id: string;
+  senderUserId: string;
+  state: string;
+  updatedAt: string;
+};
+
+export type AdminReportFocusedContext = {
+  afterCount: number;
+  beforeCount: number;
+  messages: AdminReportFocusedMessage[];
+  reportedMessageId: string;
+  windowEndIndex: number;
+  windowStartIndex: number;
+};
+
+export type AdminSocialSafetyIndicators = {
+  account: {
+    accountState: string;
+    deletionState: string;
+    role: string;
+  } | null;
+  blocksCreated: number;
+  blocksReceived: number;
+  inviteSend24h: number;
+  recentActions: AdminActionLog[];
+  reportsMade: number;
+  reportsReceived: number;
+  requestSend24h: number;
+};
+
+export type AdminReportSocialContext = {
+  context: {
+    focusedContext: AdminReportFocusedContext | null;
+    socialIndicators: AdminSocialSafetyIndicators | null;
+  };
+  evidence: AdminReportEvidence[];
+  reportId: string;
+};
+
+export type AdminReportEvidenceAccess = {
+  evidence: AdminReportEvidence;
+  expiresAt: string;
+  url: string;
+};
 export type AdminReportActionResult = {
   action: AdminActionLog;
   message?: {
@@ -363,6 +433,19 @@ export function getAdminReportDetail(reportId: string) {
   return apiRequest<AdminReportDetail>(`/admin/reports/${reportId}`);
 }
 
+export function getAdminReportContext(reportId: string) {
+  return apiRequest<AdminReportSocialContext>("/admin/reports/" + reportId + "/context");
+}
+
+export function listAdminReportEvidence(reportId: string) {
+  return apiRequest<{ evidence: AdminReportEvidence[]; reportId: string }>("/admin/reports/" + reportId + "/evidence");
+}
+
+export function createAdminReportEvidenceAccess(reportId: string, evidenceId: string) {
+  return apiRequest<AdminReportEvidenceAccess>("/admin/reports/" + reportId + "/evidence/" + evidenceId + "/access", {
+    method: "POST"
+  });
+}
 export function listAdminModerationActions(filters: {
   actionType?: AdminModerationActionType;
   search?: string;

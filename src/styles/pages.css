@@ -1591,3 +1591,69 @@
 .conversation-list-item:hover {
   background: var(--color-surface);
 }
+
+.report-dialog-backdrop {
+  align-items: center;
+  background: rgba(4, 7, 18, 0.72);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: var(--space-4);
+  position: fixed;
+  z-index: 80;
+}
+
+.report-dialog-panel {
+  background: var(--color-bg-glass-strong);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: grid;
+  gap: var(--space-3);
+  max-width: 540px;
+  padding: var(--space-4);
+  width: min(100%, 540px);
+}
+
+.report-dialog-header {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.report-dialog-header h3,
+.report-dialog-header p,
+.report-confirmation h4,
+.report-confirmation p,
+.report-dialog-count {
+  margin: 0;
+}
+
+.report-dialog-panel label,
+.report-dialog-actions,
+.report-confirmation {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.report-dialog-count {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-label);
+  justify-self: end;
+}
+
+.report-dialog-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dm-message-meta {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+  justify-content: space-between;
+}
+
+.dm-report-action {
+  opacity: 0.82;
+}

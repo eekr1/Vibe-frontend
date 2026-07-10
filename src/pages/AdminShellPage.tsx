@@ -1,10 +1,12 @@
 import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import {
   applyAdminReportAction,
+  createAdminReportEvidenceAccess,
   createAdminCategory,
   getAdminPlatformContentDetail,
   getAdminOverview,
   getAdminReportDetail,
+  getAdminReportContext,
   getAdminRoomDetail,
   getAdminUserDetail,
   listAdminCategories,
@@ -26,6 +28,8 @@ import {
   type AdminPlatformContentDetail,
   type AdminPlatformContentPageKey,
   type AdminReportDetail,
+  type AdminReportEvidenceAccess,
+  type AdminReportSocialContext,
   type AdminModerationAction,
   type AdminOverview,
   type AdminReport,
@@ -73,7 +77,7 @@ const reportStatusFilters: Array<AdminReportStatus | "all"> = [
   "escalated"
 ];
 
-const reportTargetTypeFilters: Array<AdminReportTargetType | "all"> = ["all", "room", "user", "message"];
+const reportTargetTypeFilters: Array<AdminReportTargetType | "all"> = ["all", "room", "user", "profile", "message", "direct_message"];
 
 const accountStates: AdminAccountState[] = ["active", "restricted", "suspended", "banned"];
 
@@ -215,6 +219,8 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
   const [rooms, setRooms] = useState<AdminRoom[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedReportDetail, setSelectedReportDetail] = useState<AdminReportDetail | null>(null);
+  const [reportSocialContext, setReportSocialContext] = useState<AdminReportSocialContext | null>(null);
+  const [reportEvidenceAccess, setReportEvidenceAccess] = useState<Record<string, AdminReportEvidenceAccess>>({});
   const [selectedRoomDetail, setSelectedRoomDetail] = useState<AdminRoomDetail | null>(null);
   const [selectedContentDetail, setSelectedContentDetail] = useState<AdminPlatformContentDetail | null>(null);
   const [selectedUserDetail, setSelectedUserDetail] = useState<AdminUserDetail | null>(null);
@@ -308,8 +314,13 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
     setIsLoadingDetail(`report:${reportId}`);
 
     try {
-      const detail = await getAdminReportDetail(reportId);
+      const [detail, socialContext] = await Promise.all([
+        getAdminReportDetail(reportId),
+        getAdminReportContext(reportId)
+      ]);
       setSelectedReportDetail(detail);
+      setReportSocialContext(socialContext);
+      setReportEvidenceAccess({});
       setReportActionReason("");
       setActiveSection("reports");
     } catch (caughtError) {
@@ -443,6 +454,23 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
       setSuccess(`${actionLabel} applied, logged, and connected to report ${compactId(report.id)}.`);
     } catch (caughtError) {
       setError(describeAdminError(caughtError, `${actionLabel} could not be applied.`));
+    } finally {
+      setIsMutating(null);
+    }
+  }
+
+  async function handleEvidenceAccess(evidenceId: string) {
+    if (!selectedReportDetail) return;
+    setError(null);
+    setSuccess(null);
+    setIsMutating(`evidence:${evidenceId}`);
+
+    try {
+      const result = await createAdminReportEvidenceAccess(selectedReportDetail.report.id, evidenceId);
+      setReportEvidenceAccess((currentAccess) => ({ ...currentAccess, [evidenceId]: result }));
+      setSuccess(`Audited evidence access URL generated for evidence ${compactId(evidenceId)}.`);
+    } catch (caughtError) {
+      setError(describeAdminError(caughtError, "Evidence access URL could not be generated."));
     } finally {
       setIsMutating(null);
     }
@@ -1301,6 +1329,83 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
                     {selectedReportDetail.context.relatedModerationActions.slice(0, 4).map((action) => (
                       <p key={action.id}>{formatAdminToken(action.actionType)} | {action.target.displayName} | {formatDate(action.createdAt)}</p>
                     ))}
+                  </div>
+                  <div>
+                    <h4>Focused social context</h4>
+                    {reportSocialContext?.context.socialIndicators ? (
+                      <div className="admin-social-indicators">
+                        <p>Reports made: {reportSocialContext.context.socialIndicators.reportsMade}</p>
+                        <p>Reports received: {reportSocialContext.context.socialIndicators.reportsReceived}</p>
+                        <p>Blocks created: {reportSocialContext.context.socialIndicators.blocksCreated}</p>
+                        <p>Blocks received: {reportSocialContext.context.socialIndicators.blocksReceived}</p>
+                        <p>Friend requests 24h: {reportSocialContext.context.socialIndicators.requestSend24h}</p>
+                        <p>Room invites 24h: {reportSocialContext.context.socialIndicators.inviteSend24h}</p>
+                      </div>
+                    ) : (
+                      <p>No bounded social indicators are attached to this report target.</p>
+                    )}
+                    {reportSocialContext?.context.focusedContext ? (
+                      <>
+                        <p>
+                          Focused DM window: {reportSocialContext.context.focusedContext.messages.length} messages, {reportSocialContext.context.focusedContext.beforeCount} before and {reportSocialContext.context.focusedContext.afterCount} after outside the visible window.
+                        </p>
+                        <div className="admin-evidence-message-list">
+                          {reportSocialContext.context.focusedContext.messages.map((message) => (
+                            <div className={message.id === reportSocialContext.context.focusedContext?.reportedMessageId ? "admin-evidence-message is-reported" : "admin-evidence-message"} key={message.id}>
+                              <small>{formatDate(message.createdAt)} | sender {compactId(message.senderUserId)} | {message.state}</small>
+                              <p>{message.body}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <AdminEmptyState
+                        body="This report has no focused DM evidence context. Profile, room, and legacy message reports may only expose bounded target context."
+                        title="No focused evidence window"
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <h4>Evidence access</h4>
+                    {reportSocialContext?.evidence.length ? (
+                      reportSocialContext.evidence.map((evidence) => {
+                        const access = reportEvidenceAccess[evidence.id];
+                        return (
+                          <div className="admin-evidence-card" key={evidence.id}>
+                            <p>{formatAdminToken(evidence.kind)} <AdminStatusPill tone={evidence.retentionState === "held" ? "warning" : "neutral"}>{formatAdminToken(evidence.retentionState)}</AdminStatusPill></p>
+                            <small>Captured {formatDate(evidence.createdAt)} | v{evidence.captureVersion} | {evidence.byteSize} bytes | {evidence.contentEncoding} | {evidence.encryptionAlg}</small>
+                            <small>Checksum {evidence.checksumSha256.slice(0, 16)}...</small>
+                            <button
+                              className="secondary-action compact"
+                              disabled={isMutating === `evidence:${evidence.id}`}
+                              onClick={() => void handleEvidenceAccess(evidence.id)}
+                              type="button"
+                            >
+                              {isMutating === `evidence:${evidence.id}` ? "Generating..." : "Generate audited full evidence link"}
+                            </button>
+                            {access ? (
+                              <p className="admin-evidence-access">
+                                Access URL generated. Expires {formatDate(access.expiresAt)}. <a href={access.url} rel="noopener noreferrer" target="_blank">Open evidence</a>
+                              </p>
+                            ) : null}
+                            {evidence.accessLogs?.length ? (
+                              <div className="admin-evidence-log-list">
+                                {evidence.accessLogs.slice(0, 3).map((log) => (
+                                  <small key={log.id}>{formatAdminToken(log.action)} | {log.actor?.displayName ?? compactId(log.actorUserId)} | {formatDate(log.createdAt)}</small>
+                                ))}
+                              </div>
+                            ) : (
+                              <small>No prior evidence access shown in this loaded context.</small>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <AdminEmptyState
+                        body="No private evidence object is attached to this report. This is expected for profile-only reports."
+                        title="No evidence object"
+                      />
+                    )}
                   </div>
                   <div>
                     <h4>Take platform action</h4>

@@ -13,7 +13,7 @@ export type ReportReason =
   | "inappropriate_room_title"
   | "other"
   | "spam";
-export type ReportTargetType = "message" | "room" | "user";
+export type ReportTargetType = "direct_message" | "message" | "profile" | "room" | "user";
 
 export type RoomCategory = {
   id: string;

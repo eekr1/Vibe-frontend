@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { ApiClientError } from "../lib/api";
-import { submitReport } from "../rooms/roomApi";
 import type { RelationshipAction, RelationshipState } from "../users/profileApi";
+import { ReportDialog } from "./ReportDialog";
 import {
   blockMember,
   cancelFriendRequest,
@@ -68,10 +68,11 @@ function nextRelationship(state: "blocked" | "friends" | "none" | "outgoing_pend
   return { actions, state };
 }
 
-export function RelationshipActions({ compact = false, initialRelationship, inviteDisabled = false, inviteRoomId = null, onChanged, onInviteSent, reportRoomId, showReport = true, targetLabel, targetUserId }: Props) {
+export function RelationshipActions({ compact = false, initialRelationship, inviteDisabled = false, inviteRoomId = null, onChanged, onInviteSent, showReport = true, targetLabel, targetUserId }: Props) {
   const [relationship, setRelationship] = useState<RelationshipState | null>(initialRelationship ?? null);
   const [busy, setBusy] = useState<RelationshipAction | "invite" | "refresh" | null>(initialRelationship ? null : "refresh");
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [activeReport, setActiveReport] = useState(false);
   const alive = useRef(true);
 
   async function refresh() {
@@ -110,19 +111,37 @@ export function RelationshipActions({ compact = false, initialRelationship, invi
     }
   }
 
+  async function blockFromReport() {
+    setBusy("block");
+    setFeedback(null);
+    try {
+      await blockMember(targetUserId);
+      const optimistic = nextRelationship("blocked");
+      setRelationship(optimistic);
+      onChanged?.(optimistic);
+      setFeedback(`${targetLabel} is blocked.`);
+      await refresh();
+    } catch (error) {
+      const message = describeError(error);
+      setFeedback(message);
+      await refresh();
+      throw new Error(message);
+    } finally {
+      if (alive.current) setBusy(null);
+    }
+  }
+
   async function act(action: RelationshipAction) {
+    if (action === "report") {
+      setActiveReport(true);
+      return;
+    }
+
     const prompt = confirmation(action, targetLabel);
     if (prompt && !window.confirm(prompt)) return;
     setBusy(action);
     setFeedback(null);
     try {
-      if (action === "report") {
-        const details = window.prompt(`Briefly describe why you are reporting ${targetLabel}. This is private to the safety team.`)?.trim();
-        if (!details) { setFeedback("Report cancelled. No information was sent."); return; }
-        await submitReport({ details, reason: "other", roomId: reportRoomId, targetId: targetUserId, targetType: "user" });
-        setFeedback("Report submitted privately. Thank you for helping keep Vibehall safe.");
-        return;
-      }
       const result = action === "send" ? await sendFriendRequest(targetUserId)
         : action === "cancel" ? await cancelFriendRequest(targetUserId)
         : action === "accept" || action === "decline" ? await respondToFriendRequest(targetUserId, action)
@@ -168,6 +187,16 @@ export function RelationshipActions({ compact = false, initialRelationship, invi
         ))}
       </div>
       {feedback ? <p aria-live="polite" className="relationship-feedback" role="status">{feedback}</p> : null}
+      {activeReport ? (
+        <ReportDialog
+          onBlock={relationship.state === "blocked" ? undefined : blockFromReport}
+          onClose={() => setActiveReport(false)}
+          onSubmitted={() => setFeedback("Report submitted privately. Thank you for helping keep Vibehall safe.")}
+          targetId={targetUserId}
+          targetLabel={targetLabel}
+          targetType="profile"
+        />
+      ) : null}
     </div>
   );
 }

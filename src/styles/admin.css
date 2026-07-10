@@ -501,3 +501,45 @@
     flex: 1 1 9rem;
   }
 }
+.admin-social-indicators,
+.admin-evidence-message-list,
+.admin-evidence-card,
+.admin-evidence-log-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.admin-social-indicators {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-evidence-message-list {
+  max-height: 280px;
+  overflow: auto;
+}
+
+.admin-evidence-message,
+.admin-evidence-card {
+  background: var(--color-surface-glass-soft);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+}
+
+.admin-evidence-message.is-reported {
+  border-color: var(--color-warning-border-strong);
+  box-shadow: inset 3px 0 0 var(--color-warning-border-strong);
+}
+
+.admin-evidence-message p,
+.admin-evidence-card p,
+.admin-evidence-card small,
+.admin-evidence-log-list small {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-evidence-access a {
+  color: var(--color-accent-soft);
+  font-weight: 800;
+}
