@@ -41,7 +41,7 @@ export type SocialNotification = {
   id: string;
   payload: unknown;
   readAt: string | null;
-  source: "relationship" | "room_invite";
+  source: "direct_message" | "relationship" | "room_invite";
   sourceId: string;
   state: "active" | "terminal";
   terminalAt: string | null;
@@ -104,7 +104,7 @@ export function markNotificationRead(notificationId: string) { return apiRequest
 export function markAllNotificationsRead() { return apiRequest<NotificationSummary>("/social/notifications/read-all", { method: "POST" }); }
 export function listFriendPresence() { return apiRequest<{ degraded: boolean; items: FriendPresence[] }>("/social/presence/friends"); }
 
-export function listDirectMessageConversations() { return apiRequest<Conversation[]>("/social/dm/conversations"); }
+export function listDirectMessageConversations(cursor?: string) { return apiRequest<CursorPage<Conversation>>(`/social/dm/conversations${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`); }
 export function listDirectMessages(conversationId: string, cursor?: string) { return apiRequest<CursorPage<DirectMessage>>(`/social/dm/conversations/${encodeURIComponent(conversationId)}/messages${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`); }
 export function sendDirectMessage(body: string, clientMessageId: string, targetUserId: string) { return apiRequest<{ conversationId: string; created: boolean; message: DirectMessage }>("/social/dm/messages", { body: { body, clientMessageId, targetUserId }, method: "POST" }); }
 export function markDirectMessagesDelivered(conversationId: string, messageId: string) { return apiRequest<{ advanced: boolean }>(`/social/dm/conversations/${encodeURIComponent(conversationId)}/delivered`, { body: { messageId }, method: "POST" }); }

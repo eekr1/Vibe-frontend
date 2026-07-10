@@ -63,6 +63,10 @@ function errorMessage(error: unknown) {
   return "Social updates are temporarily unavailable.";
 }
 
+function isFeatureDisabled(error: unknown) {
+  return error instanceof ApiClientError && error.code === "FEATURE_DISABLED";
+}
+
 function activeRoomId() {
   if (window.location.pathname !== "/room") return null;
   return new URLSearchParams(window.location.search).get("roomId");
@@ -86,6 +90,8 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
   const [status, setStatus] = useState<RailStatus>("idle");
   const [degraded, setDegraded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [directMessagesAvailable, setDirectMessagesAvailable] = useState(false);
+  const [directMessagesError, setDirectMessagesError] = useState<string | null>(null);
   const socketRef = useRef<RoomRealtimeSocket | null>(null);
 
   const roomInviteContext = activeRoomId();
@@ -105,23 +111,34 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
   async function refresh() {
     setStatus((current) => current === "ready" ? "reconnecting" : "loading");
     setError(null);
+    setDirectMessagesError(null);
     try {
-      const [friendData, convData, requestData, inviteData, presenceData, summaryData] = await Promise.all([
+      const [friendData, requestData, inviteData, presenceData, summaryData] = await Promise.all([
         listFriends(),
-        listDirectMessageConversations(),
         listFriendRequests(),
         listRoomInvites(),
         listFriendPresence(),
         getNotificationSummary()
       ]);
       setFriends(friendData.items);
-      setConversations(convData);
       setRequests(requestData.items);
       setInvites(inviteData.items);
       setPresence(Object.fromEntries(presenceData.items.map((item) => [item.userId, item])));
       setDegraded(presenceData.degraded);
       setSummary(summaryData);
       onBadgeChange(summaryData);
+
+      try {
+        const conversationPage = await listDirectMessageConversations();
+        setConversations(conversationPage.items);
+        setDirectMessagesAvailable(true);
+      } catch (dmError) {
+        setConversations([]);
+        setDirectMessagesAvailable(false);
+        if (!isFeatureDisabled(dmError)) setDirectMessagesError(errorMessage(dmError));
+        if (tab === "messages") setTab("friends");
+      }
+
       setStatus("ready");
     } catch (caught) {
       setError(errorMessage(caught));
@@ -202,7 +219,7 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
 
         <div className="social-rail-tabs" role="tablist" aria-label="Social sections">
           <button aria-selected={tab === "friends"} className={tab === "friends" ? "is-active" : ""} onClick={() => setTab("friends")} role="tab" type="button">Friends</button>
-          <button aria-selected={tab === "messages"} className={tab === "messages" ? "is-active" : ""} onClick={() => setTab("messages")} role="tab" type="button">Messages</button>
+          {directMessagesAvailable ? <button aria-selected={tab === "messages"} className={tab === "messages" ? "is-active" : ""} onClick={() => setTab("messages")} role="tab" type="button">Messages</button> : null}
           <button aria-selected={tab === "invites"} className={tab === "invites" ? "is-active" : ""} onClick={() => setTab("invites")} role="tab" type="button">Invites {actionableInvites.length ? `(${actionableInvites.length})` : ""}</button>
           <button aria-selected={tab === "requests"} className={tab === "requests" ? "is-active" : ""} onClick={() => setTab("requests")} role="tab" type="button">Requests {incoming.length ? `(${incoming.length})` : ""}</button>
         </div>
@@ -211,6 +228,7 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
         {status === "stale" ? <p className="social-rail-state is-warning" role="status">Realtime is reconnecting. Showing the latest loaded state.</p> : null}
         {degraded ? <p className="social-rail-state is-warning">Presence is temporarily degraded; friends may appear offline.</p> : null}
         {error ? <p className="form-error" role="alert">{error} <button className="text-action compact" onClick={() => void refresh()} type="button">Retry</button></p> : null}
+        {directMessagesError ? <p className="social-rail-state is-warning" role="status">Messages are temporarily unavailable; friends, requests, and invites still work.</p> : null}
 
         {tab === "friends" ? (
           <section className="social-rail-section" aria-label="Friends presence">
@@ -220,13 +238,7 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
               {filteredFriends.map((profile) => (
                 <article className="social-rail-friend" key={profile.id}>
                   <SocialIdentity context={describePresence(presence[profile.id])} initialRelationship={initialRelationship("friends")} inviteRoomId={roomInviteContext} onChanged={() => void refresh()} onInviteSent={() => void refresh()} onNavigate={navigate} profile={profile} />
-                  {onOpenConversation && (
-                    <button className="secondary-action compact start-dm-button" onClick={() => {
-                      // We don't have conversationId yet, but in reality we'd either optimistically create it or have it.
-                      // For now, redirecting to /messages might be safer if we don't know it, but let's assume we can fetch it or just navigate to messages?
-                      // Wait, if we pass targetUserId, we need to create it.
-                    }} type="button" style={{display: "none"}}>Message</button>
-                  )}
+                  {directMessagesAvailable ? <button className="secondary-action compact start-dm-button" onClick={() => navigate(`/messages?targetUserId=${encodeURIComponent(profile.id)}`)} type="button">Message</button> : null}
                 </article>
               ))}
             </div>

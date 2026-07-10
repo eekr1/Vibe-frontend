@@ -17,8 +17,8 @@ export function ConversationPanel({ conversationId, minimized, onClose, onMinimi
 
   useEffect(() => {
     let active = true;
-    listDirectMessageConversations().then((conversations) => {
-      const match = conversations.find(c => c.conversationId === conversationId);
+    listDirectMessageConversations().then((page) => {
+      const match = page.items.find((conversation) => conversation.conversationId === conversationId);
       if (match && active) {
         setConversation(match);
       }

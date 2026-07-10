@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { sendDirectMessage } from "./socialApi";
 
 type Props = {
-  conversationId: string;
+  conversationId?: string;
+  onSent?: (conversationId: string) => void;
   targetUserId: string;
 };
 
@@ -10,13 +11,13 @@ function generateId() {
   return Math.random().toString(36).slice(2, 11);
 }
 
-export function DirectMessageComposer({ conversationId, targetUserId }: Props) {
+export function DirectMessageComposer({ conversationId, onSent, targetUserId }: Props) {
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const draftKey = `vibehall:dm-draft:${conversationId}`;
+  const draftKey = conversationId ? `vibehall:dm-draft:${conversationId}` : `vibehall:dm-draft:new:${targetUserId}`;
 
   useEffect(() => {
     const draft = window.localStorage.getItem(draftKey);

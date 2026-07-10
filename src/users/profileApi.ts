@@ -27,7 +27,7 @@ export type SocialSettings = {
 };
 
 export type MyProfileData = {
-  capabilities: { socialEnabled: boolean };
+  capabilities: { directMessagesEnabled: boolean; socialEnabled: boolean };
   profile: MemberProfile;
   settings: SocialSettings;
   user: CurrentUser;

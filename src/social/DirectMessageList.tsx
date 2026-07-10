@@ -36,7 +36,7 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
       
       // Mark read
       if (msgPage.items.length > 0) {
-        markDirectMessagesRead(conversationId, msgPage.items[0].id).catch(() => undefined);
+        markDirectMessagesRead(conversationId, msgPage.items[msgPage.items.length - 1].id).catch(() => undefined);
       }
     }).catch(() => {
       if (active) setLoading(false);

@@ -1,6 +1,6 @@
 import { io, type Socket } from "socket.io-client";
 import type { CurrentUser } from "../auth/AuthContext";
-import type { NotificationSummary, FriendPresence } from "../social/socialApi";
+import type { DirectMessage, FriendPresence, NotificationSummary } from "../social/socialApi";
 import type { ModerationAction, ModerationActionType, Room, RoomMessage, RoomParticipant } from "./roomApi";
 
 export type PlaybackState = {
@@ -62,17 +62,18 @@ type ServerToClientEvents = {
       targetUserId: string;
     }>
   ) => void;
-  "dm.conversation.deleted_for_user": (payload: RealtimeEnvelope<{ cleanupAfter: string | null; conversationId: string; userId: string }>) => void;
-  "dm.delivered.updated": (payload: RealtimeEnvelope<{ conversationId: string; messageId: string; userId: string }>) => void;
-  "dm.message.created": (payload: RealtimeEnvelope<{ conversationId: string; messageId: string; recipientUserId: string; senderUserId: string }>) => void;
-  "dm.read.updated": (payload: RealtimeEnvelope<{ conversationId: string; messageId: string; userId: string }>) => void;
-  "notification.invalidated": (payload: RealtimeEnvelope<{ reason: "block" | "friendship" | "notification" | "request" | "unblock"; summary: NotificationSummary }>) => void;
+  "dm.conversation.deleted": (payload: RealtimeEnvelope<{ cleanupAfter: string | null; conversationId: string; userId: string }>) => void;
+  "dm.delivery.updated": (payload: RealtimeEnvelope<{ conversationId: string; messageId: string; updatedAt: string; userId: string }>) => void;
+  "dm.message.created": (payload: RealtimeEnvelope<{ conversationId: string; message: DirectMessage }>) => void;
+  "dm.read.updated": (payload: RealtimeEnvelope<{ conversationId: string; messageId: string; updatedAt: string; userId: string }>) => void;
+  "dm.typing.updated": (payload: RealtimeEnvelope<{ conversationId: string; expiresAt: string; isTyping: boolean; userId: string }>) => void;
+  "notification.invalidated": (payload: RealtimeEnvelope<{ reason: "block" | "direct_message" | "friendship" | "invite" | "notification" | "request" | "unblock"; summary: NotificationSummary }>) => void;
   "playback.state.updated": (
     payload: RealtimeEnvelope<{ playback: PlaybackState; roomId: string; updatedByUserId: string }>
   ) => void;
   "presence.friend.updated": (payload: RealtimeEnvelope<{ presence: FriendPresence; reason: "offline" | "online" | "reconciled" }>) => void;
   "presence.friends.snapshot": (payload: RealtimeEnvelope<{ degraded: boolean; items: FriendPresence[] }>) => void;
-  "relationship.invalidated": (payload: RealtimeEnvelope<{ reason: "block" | "friendship" | "request" | "unblock" }>) => void;
+  "relationship.invalidated": (payload: RealtimeEnvelope<{ reason: "block" | "direct_message" | "friendship" | "invite" | "request" | "unblock" }>) => void;
   "room.access.revoked": (
     payload: RealtimeEnvelope<{
       actionType: ModerationActionType;
@@ -120,6 +121,18 @@ type ClientToServerEvents = {
   ) => void;
   "room.unsubscribe": (
     payload: { requestId: string; roomId: string },
+    callback: (ack: RealtimeAck) => void
+  ) => void;
+  "dm.delivery.ack": (
+    payload: { conversationId: string; messageId: string; requestId?: string },
+    callback: (ack: RealtimeAck<{ advanced: boolean; conversationId: string; messageId: string; userId: string }>) => void
+  ) => void;
+  "dm.read.advance": (
+    payload: { conversationId: string; messageId: string; requestId?: string },
+    callback: (ack: RealtimeAck<{ advanced: boolean; conversationId: string; messageId: string; userId: string }>) => void
+  ) => void;
+  "dm.typing": (
+    payload: { conversationId: string; isTyping: boolean; requestId?: string },
     callback: (ack: RealtimeAck) => void
   ) => void;
 };
