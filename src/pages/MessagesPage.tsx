@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiClientError } from "../lib/api";
-import { type Conversation, listDirectMessageConversations } from "../social/socialApi";
+import { type Conversation, deleteDirectMessageConversationForUser, listDirectMessageConversations } from "../social/socialApi";
 import { DirectMessageList } from "../social/DirectMessageList";
 import { DirectMessageComposer } from "../social/DirectMessageComposer";
+import { useDirectMessageRealtime } from "../social/useDirectMessageRealtime";
 
 function isFeatureDisabled(error: unknown) {
   return error instanceof ApiClientError && error.code === "FEATURE_DISABLED";
@@ -20,10 +21,11 @@ export function MessagesPage({ onNavigate }: { onNavigate: (path: string) => voi
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [draftTargetUserId, setDraftTargetUserId] = useState<string | null>(targetUserId);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [featureDisabled, setFeatureDisabled] = useState(false);
 
-  async function refresh(preferredConversationId?: string | null) {
+  const refresh = useCallback(async (preferredConversationId?: string | null) => {
     setLoading(true);
     setError(null);
     try {
@@ -32,8 +34,9 @@ export function MessagesPage({ onNavigate }: { onNavigate: (path: string) => voi
       setConversations(items);
       setFeatureDisabled(false);
       const preferred = preferredConversationId ? items.find((conversation) => conversation.conversationId === preferredConversationId) : null;
+      const current = activeConversationId ? items.find((conversation) => conversation.conversationId === activeConversationId) : null;
       const targetConversation = targetUserId ? items.find((conversation) => conversation.partner.id === targetUserId) : null;
-      const nextActive = preferred?.conversationId ?? targetConversation?.conversationId ?? items[0]?.conversationId ?? null;
+      const nextActive = preferred?.conversationId ?? current?.conversationId ?? targetConversation?.conversationId ?? items[0]?.conversationId ?? null;
       setActiveConversationId(nextActive);
       setDraftTargetUserId(nextActive ? null : targetUserId);
     } catch (caught) {
@@ -45,13 +48,38 @@ export function MessagesPage({ onNavigate }: { onNavigate: (path: string) => voi
     } finally {
       setLoading(false);
     }
-  }
+  }, [activeConversationId, targetUserId]);
 
   useEffect(() => {
-    void refresh();
+    void refresh(null);
   }, []);
 
+  useDirectMessageRealtime({
+    onConversationDeleted: (payload) => {
+      if (payload.conversationId === activeConversationId) setActiveConversationId(null);
+    },
+    onMessageCreated: (payload) => { void refresh(payload.conversationId); },
+    onRefresh: () => { void refresh(activeConversationId); }
+  });
+
   const activeConversation = conversations.find((conversation) => conversation.conversationId === activeConversationId) ?? null;
+
+  async function deleteActiveConversation() {
+    if (!activeConversation || deleting) return;
+    const confirmed = window.confirm("Delete this conversation from your view? The other person keeps their copy.");
+    if (!confirmed) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await deleteDirectMessageConversationForUser(activeConversation.conversationId);
+      setActiveConversationId(null);
+      await refresh(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Conversation could not be deleted.");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <div className="messages-page">
@@ -93,24 +121,18 @@ export function MessagesPage({ onNavigate }: { onNavigate: (path: string) => voi
         {activeConversation ? (
           <>
             <div className="messages-main-header">
-              <h3>{activeConversation.partner.displayName}</h3>
-              {activeConversation.readOnly ? <p className="form-feedback">Read-only conversation</p> : null}
+              <div>
+                <h3>{activeConversation.partner.displayName}</h3>
+                {activeConversation.readOnly ? <p className="form-feedback">Read-only conversation</p> : null}
+              </div>
+              <button className="text-action compact" disabled={deleting} onClick={() => void deleteActiveConversation()} type="button">Delete</button>
             </div>
             <div className="messages-main-body">
-              <DirectMessageList
-                conversationId={activeConversation.conversationId}
-                partnerId={activeConversation.partner.id}
-                readOnly={activeConversation.readOnly}
-                onNavigate={onNavigate}
-              />
+              <DirectMessageList conversationId={activeConversation.conversationId} partnerId={activeConversation.partner.id} readOnly={activeConversation.readOnly} onNavigate={onNavigate} />
             </div>
             <div className="messages-main-footer">
               {!activeConversation.readOnly ? (
-                <DirectMessageComposer
-                  conversationId={activeConversation.conversationId}
-                  onSent={(conversationId) => void refresh(conversationId)}
-                  targetUserId={activeConversation.partner.id}
-                />
+                <DirectMessageComposer conversationId={activeConversation.conversationId} onSent={(conversationId) => void refresh(conversationId)} targetUserId={activeConversation.partner.id} />
               ) : (
                 <p className="form-feedback">You can no longer message this person.</p>
               )}

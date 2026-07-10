@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { type DirectMessage, listDirectMessages, markDirectMessagesRead, listRoomInvites, type RoomInvite } from "./socialApi";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type DirectMessage, listDirectMessages, markDirectMessagesDelivered, markDirectMessagesRead, listRoomInvites, type RoomInvite } from "./socialApi";
 import { RoomInviteCard } from "./RoomInviteCard";
+import { useDirectMessageRealtime } from "./useDirectMessageRealtime";
 
 type Props = {
   conversationId: string;
@@ -19,45 +20,69 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const markVisibleRead = useCallback((items: DirectMessage[]) => {
+    const latest = items.at(-1);
+    if (!latest) return;
+    void markDirectMessagesRead(conversationId, latest.id);
+  }, [conversationId]);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [msgPage, invPage] = await Promise.all([
+        listDirectMessages(conversationId),
+        listRoomInvites()
+      ]);
+      setMessages(msgPage.items);
+      setInvites(invPage.items.filter((invite) => invite.inviter.id === partnerId || invite.recipient.id === partnerId));
+      markVisibleRead(msgPage.items);
+    } finally {
+      setLoading(false);
+    }
+  }, [conversationId, markVisibleRead, partnerId]);
+
   useEffect(() => {
     let active = true;
     setLoading(true);
     Promise.all([
       listDirectMessages(conversationId),
-      listRoomInvites() // In a real app we might filter this by partnerId on the server
+      listRoomInvites()
     ]).then(([msgPage, invPage]) => {
       if (!active) return;
       setMessages(msgPage.items);
-      const relevantInvites = invPage.items.filter(
-        i => i.inviter.id === partnerId || i.recipient.id === partnerId
-      );
-      setInvites(relevantInvites);
+      setInvites(invPage.items.filter((invite) => invite.inviter.id === partnerId || invite.recipient.id === partnerId));
+      markVisibleRead(msgPage.items);
       setLoading(false);
-      
-      // Mark read
-      if (msgPage.items.length > 0) {
-        markDirectMessagesRead(conversationId, msgPage.items[msgPage.items.length - 1].id).catch(() => undefined);
-      }
     }).catch(() => {
       if (active) setLoading(false);
     });
-
     return () => { active = false; };
-  }, [conversationId, partnerId]);
+  }, [conversationId, markVisibleRead, partnerId]);
 
-  // Scroll to bottom on initial load
+  useDirectMessageRealtime({
+    onMessageCreated: ({ conversationId: eventConversationId, message }) => {
+      if (eventConversationId !== conversationId) return;
+      setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message]);
+      if (message.senderUserId === partnerId) {
+        void markDirectMessagesDelivered(conversationId, message.id);
+        void markDirectMessagesRead(conversationId, message.id);
+      }
+    },
+    onRefresh: () => { void loadData(); }
+  });
+
   useEffect(() => {
     if (!loading && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [loading]);
+  }, [loading, messages.length, invites.length]);
 
   const items = useMemo(() => {
     const combined: ChatItem[] = [
-      ...messages.map(m => ({ type: "message" as const, data: m, date: new Date(m.createdAt) })),
-      ...invites.map(i => ({ type: "invite" as const, data: i, date: new Date(i.createdAt) }))
+      ...messages.map((message) => ({ type: "message" as const, data: message, date: new Date(message.createdAt) })),
+      ...invites.map((invite) => ({ type: "invite" as const, data: invite, date: new Date(invite.createdAt) }))
     ];
-    return combined.sort((a, b) => a.date.getTime() - b.date.getTime());
+    return combined.sort((left, right) => left.date.getTime() - right.date.getTime());
   }, [messages, invites]);
 
   function replaceInvite(nextInvite: RoomInvite) {
@@ -66,26 +91,17 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
 
   function renderMessageBody(body: string, linkTokens: DirectMessage["linkTokens"]) {
     if (!linkTokens || linkTokens.length === 0) return body;
-    
+
     const elements: React.ReactNode[] = [];
     let lastIndex = 0;
-    
-    linkTokens.forEach((token, i) => {
-      if (token.start > lastIndex) {
-        elements.push(<span key={`text-${i}`}>{body.slice(lastIndex, token.start)}</span>);
-      }
-      elements.push(
-        <a key={`link-${i}`} href={token.url} target="_blank" rel="noopener noreferrer" className="message-link">
-          {token.url}
-        </a>
-      );
+
+    linkTokens.forEach((token, index) => {
+      if (token.start > lastIndex) elements.push(<span key={`text-${index}`}>{body.slice(lastIndex, token.start)}</span>);
+      elements.push(<a className="message-link" href={token.url} key={`link-${index}`} rel="noopener noreferrer" target="_blank">{token.url}</a>);
       lastIndex = token.end;
     });
-    
-    if (lastIndex < body.length) {
-      elements.push(<span key="text-end">{body.slice(lastIndex)}</span>);
-    }
-    
+
+    if (lastIndex < body.length) elements.push(<span key="text-end">{body.slice(lastIndex)}</span>);
     return elements;
   }
 
@@ -97,31 +113,29 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
         <div className="empty-state">No messages yet. Say hi!</div>
       ) : (
         <div className="dm-items">
-          {items.map(item => {
+          {items.map((item) => {
             if (item.type === "message") {
-              const msg = item.data;
-              const isMine = msg.senderUserId !== partnerId;
+              const message = item.data;
+              const isMine = message.senderUserId !== partnerId;
               return (
-                <div key={`msg-${msg.id}`} className={`dm-message-bubble ${isMine ? "is-mine" : "is-theirs"}`}>
-                  <div className="dm-message-content">
-                    {renderMessageBody(msg.body, msg.linkTokens)}
-                  </div>
+                <div className={`dm-message-bubble ${isMine ? "is-mine" : "is-theirs"}`} key={`msg-${message.id}`}>
+                  <div className="dm-message-content">{renderMessageBody(message.body, message.linkTokens)}</div>
                   <div className="dm-message-meta">
-                    {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    {isMine && msg.state === "visible" ? <span className="dm-status"> Sent</span> : null}
+                    {item.date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {isMine && message.state === "visible" ? <span className="dm-status"> Sent</span> : null}
                   </div>
-                </div>
-              );
-            } else {
-              return (
-                <div key={`inv-${item.data.id}`} className="dm-invite-wrapper">
-                  <RoomInviteCard compact invite={item.data} onChanged={replaceInvite} onNavigate={onNavigate} />
                 </div>
               );
             }
+            return (
+              <div className="dm-invite-wrapper" key={`inv-${item.data.id}`}>
+                <RoomInviteCard compact invite={item.data} onChanged={replaceInvite} onNavigate={onNavigate} />
+              </div>
+            );
           })}
         </div>
       )}
+      {readOnly ? <p className="form-feedback">This conversation is read-only.</p> : null}
     </div>
   );
 }
