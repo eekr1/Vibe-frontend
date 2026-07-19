@@ -1255,9 +1255,9 @@
 
 .room-invite-card {
   align-items: flex-start;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 1rem;
+  background: var(--color-surface-standard);
+  border: 1px solid var(--color-border-normal);
+  border-radius: var(--radius-md);
   display: flex;
   gap: 1rem;
   justify-content: space-between;
@@ -1290,7 +1290,7 @@
 }
 
 .room-invite-warning {
-  color: var(--warning-text, #f7c66f);
+  color: var(--color-warning);
 }
 
 .room-invite-actions {
@@ -1449,7 +1449,7 @@
 }
 
 .dm-message-bubble.is-mine .dm-message-content {
-  background: var(--color-accent-soft);
+  background: var(--color-accent-soft-background);
   color: var(--color-bg-base);
   border-bottom-right-radius: 4px;
 }
@@ -1594,13 +1594,13 @@
 
 .report-dialog-backdrop {
   align-items: center;
-  background: rgba(4, 7, 18, 0.72);
+  background: var(--color-bg-overlay);
   display: flex;
   inset: 0;
   justify-content: center;
   padding: var(--space-4);
   position: fixed;
-  z-index: 80;
+  z-index: var(--z-modal);
 }
 
 .report-dialog-panel {

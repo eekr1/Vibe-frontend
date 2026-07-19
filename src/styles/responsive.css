@@ -1,6 +1,7 @@
 @media (max-width: 1040px) {
   :root {
-    --font-size-display: 3.25rem;
+    --font-size-display: var(--font-size-hero-tablet);
+    --page-gutter: var(--page-gutter-tablet);
   }
 
   .topbar-inner {
@@ -54,9 +55,10 @@
   }
 
   :root {
-    --font-size-display: 2.5rem;
-    --font-size-heading: 1.8rem;
-    --font-size-title: 1.35rem;
+    --font-size-display: var(--font-size-hero-mobile);
+    --font-size-heading: var(--font-size-page-mobile);
+    --font-size-title: var(--font-size-section-mobile);
+    --page-gutter: var(--page-gutter-mobile);
   }
 
   .topbar {
@@ -210,6 +212,12 @@
 @media (max-width: 1040px) {
   .main-surface.has-social-rail {
     padding-right: var(--page-gutter);
+  }
+}
+
+@media (max-width: 360px) {
+  :root {
+    --page-gutter: var(--page-gutter-compact);
   }
 }
 

@@ -21,6 +21,12 @@ body {
   color: var(--color-text);
   font-family: var(--font-family-base);
   font-size: var(--font-size-body);
+  font-weight: var(--font-weight-body);
+}
+
+:where(h1, h2, h3, h4) {
+  font-family: var(--font-family-heading);
+  font-weight: var(--font-weight-heading);
 }
 
 button,
@@ -67,12 +73,20 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: var(--motion-reduced);
+    --motion-standard: var(--motion-reduced);
+    --motion-instant: var(--motion-reduced);
+    --motion-surface: var(--motion-reduced);
+    --motion-spatial: var(--motion-reduced);
+  }
+
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
+    animation-duration: var(--motion-reduced) !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: var(--motion-reduced) !important;
   }
 }
