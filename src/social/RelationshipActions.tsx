@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { ApiClientError } from "../lib/api";
+import { safeErrorText } from "../lib/errorMapping";
 import type { RelationshipAction, RelationshipState } from "../users/profileApi";
 import { ReportDialog } from "./ReportDialog";
 import {
@@ -43,7 +44,7 @@ function describeError(error: unknown) {
   if (error.code.includes("LIMIT")) return "A friendship limit has been reached. Review pending requests and try again later.";
   if (["ACCOUNT_RESTRICTED", "ACCOUNT_SUSPENDED", "ACCOUNT_BANNED"].includes(error.code)) return "This account cannot use that social action right now.";
   if (["NOT_FOUND", "FORBIDDEN"].includes(error.code)) return "This relationship is no longer available. The latest state has been loaded.";
-  return error.message;
+  return safeErrorText(error, "That action could not be completed. Please try again.");
 }
 
 function describeInviteError(error: unknown) {
@@ -53,7 +54,7 @@ function describeInviteError(error: unknown) {
   if (error.code === "LIMIT_REACHED") return "Invite limit reached. Please wait before sending more.";
   if (error.code === "NOT_ALLOWED") return "Only eligible friends can be invited to this room.";
   if (["FORBIDDEN", "NOT_FOUND", "VALIDATION_FAILED"].includes(error.code)) return "This invite can no longer be sent. Refresh and try again.";
-  return error.message;
+  return safeErrorText(error, "Invite could not be sent. Please try again.");
 }
 
 function confirmation(action: RelationshipAction, label: string) {

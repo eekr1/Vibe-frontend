@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { InlineError } from "../components/feedback";
 import { Button, FormField, Modal, Select, Textarea } from "../components/ui";
 import { ApiClientError } from "../lib/api";
 import { submitReport, type ReportReason, type ReportTargetType } from "../rooms/roomApi";
@@ -167,7 +168,7 @@ export function ReportDialog({
           </>
         )}
 
-        {error && error !== detailsError ? <p className="form-error compact" role="alert">{error}</p> : null}
+        {error && error !== detailsError ? <InlineError className="compact" description={error} /> : null}
     </Modal>
   );
 }

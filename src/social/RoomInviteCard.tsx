@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ApiClientError } from "../lib/api";
+import { safeErrorText } from "../lib/errorMapping";
 import {
   acceptRoomInvite,
   declineRoomInvite,
@@ -60,7 +61,7 @@ function describeError(error: unknown) {
   if (error.code === "ROOM_USER_BANNED") return "Room-level moderation blocks this entry.";
   if (error.code === "LIMIT_REACHED") return "Invite limit reached. Please wait before trying again.";
   if (["FORBIDDEN", "NOT_ALLOWED", "NOT_FOUND", "VALIDATION_FAILED"].includes(error.code)) return "This invite is no longer available. Refresh and try again.";
-  return error.message;
+  return safeErrorText(error, "Invite action could not be completed. Please try again.");
 }
 
 export function RoomInviteCard({ compact = false, invite, onChanged, onNavigate }: Props) {

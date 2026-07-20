@@ -1,7 +1,9 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { AuthRequiredGate } from "../components/AuthRequiredGate";
-import { ApiClientError } from "../lib/api";
+import { InlineError, useToast } from "../components/feedback";
+import { Button } from "../components/ui";
+import { safeErrorText } from "../lib/errorMapping";
 import {
   createRoom,
   listCategories,
@@ -47,11 +49,11 @@ function getSourcePreview(url: string) {
 
 export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
   const { currentUser, isCheckingSession } = useAuth();
+  const { pushToast } = useToast();
   const [categories, setCategories] = useState<RoomCategory[]>([]);
   const [categoryId, setCategoryId] = useState("");
   const [createdPrivateRoom, setCreatedPrivateRoom] = useState<Room | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [inviteCopyStatus, setInviteCopyStatus] = useState<string | null>(null);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [participantLimit, setParticipantLimit] = useState(8);
@@ -90,11 +92,7 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
         setCategoryId(nextCategories[0]?.id ?? "");
       } catch (caughtError) {
         if (isMounted) {
-          setError(
-            caughtError instanceof ApiClientError
-              ? caughtError.message
-              : "Categories could not be loaded."
-          );
+          setError(safeErrorText(caughtError, "Categories could not be loaded."));
         }
       } finally {
         if (isMounted) {
@@ -114,7 +112,6 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
     event.preventDefault();
     setCreatedPrivateRoom(null);
     setError(null);
-    setInviteCopyStatus(null);
     setIsSubmitting(true);
 
     try {
@@ -133,11 +130,7 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
         onNavigate(`/room?roomId=${room.id}`);
       }
     } catch (caughtError) {
-      if (caughtError instanceof ApiClientError) {
-        setError(caughtError.message);
-      } else {
-        setError("Room could not be created. Please try again.");
-      }
+      setError(safeErrorText(caughtError, "Room could not be created. Please try again."));
     } finally {
       setIsSubmitting(false);
     }
@@ -150,9 +143,9 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
 
     try {
       await navigator.clipboard.writeText(createdPrivateRoomUrl);
-      setInviteCopyStatus("Invite link copied. Share it with the people you want in this private room.");
+      pushToast({ dedupeKey: "private-room-invite-copy", message: "Invite link copied. Share it with the people you want in this private room.", type: "success" });
     } catch {
-      setInviteCopyStatus("Copy failed. You can select the link manually below.");
+      pushToast({ dedupeKey: "private-room-invite-copy-failed", message: "Copy failed. You can select the link manually below.", type: "error" });
     }
   }
 
@@ -294,7 +287,7 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
           ) : null}
         </section>
 
-        {error ? <p className="form-error" role="alert">{error}</p> : null}
+        {error ? <InlineError description={error} /> : null}
 
         {createdPrivateRoom ? (
           <div className="private-invite-card">
@@ -305,7 +298,6 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
               and guests still need the password you set.
             </p>
             <input aria-label="Private room invite link" readOnly value={createdPrivateRoomUrl} />
-            {inviteCopyStatus ? <p aria-live="polite" className="state-banner success" role="status">{inviteCopyStatus}</p> : null}
             <div className="action-row">
               <button className="secondary-action compact" onClick={() => void handleCopyInviteLink()} type="button">
                 Copy invite link
@@ -325,13 +317,15 @@ export function CreateRoomPage({ onNavigate }: CreateRoomPageProps) {
           <button className="secondary-action" onClick={() => onNavigate("/discover")} type="button">
             Cancel
           </button>
-          <button
-            className="primary-action"
+          <Button
             disabled={!isReadyToCreate}
+            loading={isSubmitting}
+            loadingLabel="Creating room"
             type="submit"
+            variant="primary"
           >
-            {isSubmitting ? "Creating room..." : "Create live room"}
-          </button>
+            Create live room
+          </Button>
         </div>
       </form>
 

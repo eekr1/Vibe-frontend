@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { InlineLoader, SectionError } from "../components/feedback";
 import {
   getPublicPlatformContent,
   type PlatformContentPageKey,
@@ -178,7 +179,6 @@ export function PlatformContentPage({ eyebrow, pageKey }: PlatformContentPagePro
           return;
         }
 
-        setContent(null);
         setError(describeContentError(caughtError));
       } finally {
         if (isMounted) {
@@ -215,19 +215,11 @@ export function PlatformContentPage({ eyebrow, pageKey }: PlatformContentPagePro
       </header>
 
       {isLoading ? (
-        <div aria-live="polite" className="inline-loading" role="status">
-          <span aria-hidden="true" className="loader" />
-          Loading published platform content
-        </div>
+        <InlineLoader label={content ? "Refreshing published platform content" : "Loading published platform content"} />
       ) : null}
 
       {error ? (
-        <div className="state-banner trust-content-alert" role="alert">
-          <p>{error}</p>
-          <button className="secondary-action compact" onClick={() => setLoadToken((token) => token + 1)} type="button">
-            Retry content
-          </button>
-        </div>
+        <SectionError className="trust-content-alert" description={error} onRetry={() => setLoadToken((token) => token + 1)} title="Published content could not refresh." />
       ) : null}
 
       <article className="surface-panel content-page trust-content-card">

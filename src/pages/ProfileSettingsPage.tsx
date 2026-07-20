@@ -1,8 +1,9 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { AuthRequiredGate } from "../components/AuthRequiredGate";
+import { ActionFeedback, InlineError, InlineLoader, PageError, SkeletonText, UserRowSkeleton } from "../components/feedback";
 import { Button, FormField, Input, Modal } from "../components/ui";
-import { ApiClientError } from "../lib/api";
+import { safeErrorText } from "../lib/errorMapping";
 import { AvatarCropper } from "../users/AvatarCropper";
 import { getMyProfile, requestAccountDeletion, updateMyProfile, updateSocialSettings, type MyProfileData, type SocialSettings } from "../users/profileApi";
 import { validateProfileDraft } from "../users/profileValidation";
@@ -11,7 +12,7 @@ import { BlockedAccountsPanel } from "../social/BlockedAccountsPanel";
 
 type PrivacyDraft = Omit<SocialSettings, "updatedAt">;
 
-function message(error: unknown, fallback: string) { return error instanceof ApiClientError ? error.message : fallback; }
+function message(error: unknown, fallback: string) { return safeErrorText(error, fallback); }
 
 export function ProfileSettingsPage({ onNavigate }: { onNavigate: (path: string) => void }) {
   const { currentUser, isCheckingSession, logout, refreshCurrentUser } = useAuth();
@@ -31,7 +32,7 @@ export function ProfileSettingsPage({ onNavigate }: { onNavigate: (path: string)
   const [deletionError, setDeletionError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deletionSubmitted, setDeletionSubmitted] = useState(false);
-  const feedbackRef = useRef<HTMLParagraphElement>(null);
+  const feedbackRef = useRef<HTMLDivElement>(null);
   const dialogTitleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -91,16 +92,16 @@ export function ProfileSettingsPage({ onNavigate }: { onNavigate: (path: string)
 
   if (deletionSubmitted) return <section className="surface-panel account-deletion-complete" role="status"><p className="eyebrow">Deletion requested</p><h2>You have been signed out.</h2><p>Your account deletion is processing safely. Protected report evidence follows its separate retention rules.</p><button className="secondary-action" onClick={() => onNavigate("/")} type="button">Return home</button></section>;
   if (!isCheckingSession && !currentUser) return <AuthRequiredGate body="Manage your profile, privacy, avatar, and account from one place." onLogin={() => onNavigate("/auth?mode=login&returnTo=%2Fsettings")} onSignup={() => onNavigate("/auth?mode=signup&returnTo=%2Fsettings")} title="Log in to open settings." />;
-  if (isCheckingSession || (!data && !error)) return <section className="surface-panel wide-panel"><div aria-live="polite" className="inline-loading" role="status"><span aria-hidden="true" className="loader" />Loading settings</div></section>;
-  if (!data || !privacy) return <section className="surface-panel" role="alert"><h2>Settings unavailable</h2><p ref={feedbackRef} tabIndex={-1}>{error}</p></section>;
+  if (isCheckingSession || (!data && !error)) return <section aria-label="Loading settings" className="surface-panel wide-panel"><InlineLoader label="Loading settings" /><UserRowSkeleton /><SkeletonText lines={3} /></section>;
+  if (!data || !privacy) return <PageError description={error ?? "Try again in a moment."} title="Settings unavailable" />;
 
   const enabled = data.capabilities.socialEnabled;
   return (
     <section className="settings-page">
       <nav aria-label="Settings sections" className="settings-section-nav"><a href="#profile-settings">Profile</a><a href="#privacy-settings">Presence &amp; Privacy</a>{enabled ? <a href="#blocked-settings">Blocked Accounts</a> : null}<a href="#account-settings">Account</a></nav>
-      {!enabled ? <p className="state-banner" role="status">Social profile tools are safely disabled on this environment. Display-name management remains available.</p> : null}
-      {error ? <p className="form-error" ref={feedbackRef} role="alert" tabIndex={-1}>{error}</p> : null}
-      {success ? <p aria-live="polite" className="state-banner success" ref={feedbackRef} tabIndex={-1}>{success}</p> : null}
+      {!enabled ? <ActionFeedback>Social profile tools are safely disabled on this environment. Display-name management remains available.</ActionFeedback> : null}
+      {error ? <div ref={feedbackRef} tabIndex={-1}><InlineError description={error} /></div> : null}
+      {success ? <div ref={feedbackRef} tabIndex={-1}><ActionFeedback tone="success">{success}</ActionFeedback></div> : null}
 
       <section className="settings-grid-section" id="profile-settings" aria-labelledby="profile-settings-title">
         <ProfileIdentityCard profile={{ ...data.profile, bio, displayName }} />
@@ -108,7 +109,7 @@ export function ProfileSettingsPage({ onNavigate }: { onNavigate: (path: string)
           <div className="settings-section-heading"><div><p className="eyebrow">Profile</p><h2 id="profile-settings-title">Public identity</h2></div><span className="ui-badge">@{data.profile.username}</span></div>
           <label>Display name <span className="field-hint">2–48 characters.</span><input maxLength={48} minLength={2} onChange={(event) => setDisplayName(event.target.value)} required value={displayName} /></label>
           <label>Bio <span className="field-hint">Plain text, 160 characters. Links, HTML, and Markdown are not accepted.</span><textarea disabled={!enabled} maxLength={160} onChange={(event) => setBio(event.target.value)} rows={4} value={bio} /><span className="character-count">{bio.length}/160</span></label>
-          <button className="primary-action" disabled={savingProfile || !displayName.trim()} type="submit">{savingProfile ? "Saving…" : "Save profile"}</button>
+          <Button disabled={!displayName.trim()} loading={savingProfile} loadingLabel="Saving profile" type="submit" variant="primary">Save profile</Button>
           <AvatarCropper avatar={data.profile.avatar} disabled={!enabled} displayName={displayName || data.profile.displayName} onChanged={async (avatar) => { setData((current) => current ? { ...current, profile: { ...current.profile, avatar } } : current); await refreshCurrentUser(); }} />
         </form>
       </section>
@@ -122,7 +123,7 @@ export function ProfileSettingsPage({ onNavigate }: { onNavigate: (path: string)
           <label>Last seen<select disabled={!enabled} onChange={(event) => setPrivacy({ ...privacy, lastSeenPrivacy: event.target.value as PrivacyDraft["lastSeenPrivacy"] })} value={privacy.lastSeenPrivacy}><option value="friends">Friends</option><option value="nobody">Nobody</option></select></label>
           <label>Room invitations<select disabled={!enabled} onChange={(event) => setPrivacy({ ...privacy, invitePrivacy: event.target.value as PrivacyDraft["invitePrivacy"] })} value={privacy.invitePrivacy}><option value="friends">Friends</option><option value="nobody">Nobody</option></select></label>
         </div>
-        <button className="primary-action" disabled={!enabled || savingPrivacy} type="submit">{savingPrivacy ? "Saving…" : "Save privacy"}</button>
+        <Button disabled={!enabled} loading={savingPrivacy} loadingLabel="Saving privacy" type="submit" variant="primary">Save privacy</Button>
       </form>
 
       {enabled ? <BlockedAccountsPanel onNavigate={onNavigate} /> : null}
@@ -156,7 +157,7 @@ export function ProfileSettingsPage({ onNavigate }: { onNavigate: (path: string)
             <FormField hint="Enter the word exactly as shown." label="Type DELETE to confirm" required>
               <Input autoComplete="off" onChange={(event) => setDeletionConfirmation(event.target.value)} value={deletionConfirmation} />
             </FormField>
-            {deletionError ? <p className="form-error compact" role="alert">{deletionError}</p> : null}
+            {deletionError ? <InlineError className="compact" description={deletionError} /> : null}
             <div className="action-row">
               <Button disabled={deletionConfirmation !== "DELETE" || !deletionPassword} loading={deleting} loadingLabel="Requesting account deletion" type="submit" variant="danger">Delete permanently</Button>
               <Button disabled={deleting} onClick={() => setDeletionOpen(false)}>Cancel</Button>

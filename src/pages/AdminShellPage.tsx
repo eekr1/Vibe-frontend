@@ -43,7 +43,9 @@ import {
 } from "../admin/adminApi";
 import { useAuth } from "../auth/AuthContext";
 import { AuthRequiredGate } from "../components/AuthRequiredGate";
-import { ApiClientError } from "../lib/api";
+import { ActionFeedback, EmptyState, InlineError, InlineLoader } from "../components/feedback";
+import { Button } from "../components/ui";
+import { safeErrorText } from "../lib/errorMapping";
 
 type AdminShellPageProps = {
   onNavigate: (path: string) => void;
@@ -129,11 +131,7 @@ function formatAdminToken(value: string) {
 }
 
 function describeAdminError(error: unknown, fallback: string) {
-  if (error instanceof ApiClientError) {
-    return error.message;
-  }
-
-  return fallback;
+  return safeErrorText(error, fallback);
 }
 
 function formatDate(value: string | null) {
@@ -158,12 +156,7 @@ function includesSearch(value: string, search: string) {
 }
 
 function AdminEmptyState({ body, title }: { body: string; title: string }) {
-  return (
-    <div className="admin-empty-state">
-      <strong>{title}</strong>
-      <span>{body}</span>
-    </div>
-  );
+  return <EmptyState className="admin-empty-state" description={body} title={title} />;
 }
 
 function AdminStatusPill({
@@ -826,10 +819,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
   if (isCheckingSession) {
     return (
       <section className="surface-panel wide-panel">
-        <div className="inline-loading">
-          <span className="loader" />
-          Checking admin session
-        </div>
+        <InlineLoader label="Checking admin session" />
       </section>
     );
   }
@@ -889,22 +879,20 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
               value={searchTerm}
             />
             <small>Filters loaded rows as you type. Pressing Enter is not required.</small>
-            <button className="secondary-action compact" disabled={isLoading} onClick={() => void loadAdminData()} type="button">
-              {isLoading ? "Refreshing..." : "Refresh"}
-            </button>
+            <Button loading={isLoading} loadingLabel="Refreshing admin data" onClick={() => void loadAdminData()} size="small">Refresh</Button>
           </div>
         </header>
 
-        {error ? <p className="form-error" role="alert">{error}</p> : null}
-        {success ? <p className="state-banner success" role="status">{success}</p> : null}
+        {error ? <InlineError description={error} onRetry={() => loadAdminData()} /> : null}
+        {success ? <ActionFeedback tone="success">{success}</ActionFeedback> : null}
         {search ? (
-          <p className="state-banner" role="status">
+          <ActionFeedback>
             Searching loaded admin data for "{search}". Overview results: {visibleOverviewReports.length} reports,{" "}
             {visibleOverviewRooms.length} rooms. Section results: {visibleUsers.length} users, {visibleRooms.length} rooms,{" "}
             {visibleReports.length} reports, {visibleModerationActions.length} room actions,{" "}
             {visibleAdminActionLogs.length} admin actions, {visibleCategories.length} categories, {visiblePlatformContents.length}{" "}
             content pages.
-          </p>
+          </ActionFeedback>
         ) : null}
 
         {activeSection === "overview" && overview ? (
@@ -1786,10 +1774,7 @@ export function AdminShellPage({ onNavigate }: AdminShellPageProps) {
         ) : null}
 
         {isLoading ? (
-          <div className="inline-loading">
-            <span className="loader" />
-            Loading admin data
-          </div>
+          <InlineLoader label={lastLoadedAt ? "Refreshing admin data" : "Loading admin data"} />
         ) : null}
       </main>
     </section>

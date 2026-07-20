@@ -1,5 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { ApiClientError } from "../lib/api";
+import { EmptyState, InlineLoader, RoomCardSkeleton, SectionError } from "../components/feedback";
+import { Button } from "../components/ui";
+import { safeErrorText } from "../lib/errorMapping";
 import {
   listCategories,
   listPublicRooms,
@@ -55,6 +57,7 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<DiscoverSort>("newest");
@@ -78,11 +81,7 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
         }
       } catch (caughtError) {
         if (isMounted) {
-          setError(
-            caughtError instanceof ApiClientError
-              ? caughtError.message
-              : "Categories could not be loaded."
-          );
+          setError(safeErrorText(caughtError, "Categories could not be loaded."));
         }
       }
     }
@@ -115,12 +114,7 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
         }
       } catch (caughtError) {
         if (isMounted) {
-          setError(
-            caughtError instanceof ApiClientError
-              ? caughtError.message
-              : "Public rooms could not be loaded."
-          );
-          setRooms([]);
+          setError(safeErrorText(caughtError, "Public rooms could not be loaded."));
           setNextCursor(null);
         }
       } finally {
@@ -135,7 +129,7 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
     return () => {
       isMounted = false;
     };
-  }, [categorySlug, deferredSearch, sort]);
+  }, [categorySlug, deferredSearch, refreshKey, sort]);
 
   async function handleLoadMore() {
     if (!nextCursor) {
@@ -157,11 +151,7 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
       setRooms((currentRooms) => [...currentRooms, ...result.rooms]);
       setNextCursor(result.nextCursor);
     } catch (caughtError) {
-      setError(
-        caughtError instanceof ApiClientError
-          ? caughtError.message
-          : "More public rooms could not be loaded."
-      );
+      setError(safeErrorText(caughtError, "More public rooms could not be loaded."));
     } finally {
       setIsLoadingMore(false);
     }
@@ -171,6 +161,8 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
     setCategorySlug("");
     setSearch("");
   }
+
+  const isInitialLoading = isLoading && rooms.length === 0 && !error;
 
   return (
     <section className="discover-page">
@@ -235,29 +227,30 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
         {activeFilterCount > 0 ? <span>{activeFilterCount} active filter{activeFilterCount > 1 ? "s" : ""}</span> : null}
       </div>
 
-      {isLoading ? (
+      {isInitialLoading ? (
         <div className="room-card-grid" aria-label="Loading public rooms">
           {Array.from({ length: 6 }).map((_, index) => (
-            <article className="room-card room-card-skeleton" key={index}>
-              <div className="skeleton-block room-card-skeleton-media" />
-              <div className="room-card-body">
-                <div className="skeleton-block" />
-                <div className="skeleton-block short" />
-                <div className="skeleton-block" />
-              </div>
-            </article>
+            <RoomCardSkeleton key={index} />
           ))}
         </div>
-      ) : error ? (
-        <div className="empty-state danger discover-state-panel" role="alert">
-          <h3>Discover could not refresh.</h3>
-          <p className="form-error">{error}</p>
-          <button className="secondary-action" onClick={() => window.location.reload()} type="button">
-            Try again
-          </button>
-        </div>
+      ) : error && rooms.length === 0 ? (
+        <SectionError
+          className="discover-state-panel"
+          description={error}
+          onRetry={() => setRefreshKey((current) => current + 1)}
+          title="Discover could not refresh."
+        />
       ) : rooms.length > 0 ? (
         <>
+          {isLoading ? <InlineLoader label="Refreshing rooms" /> : null}
+          {error ? (
+            <SectionError
+              className="discover-state-panel"
+              description={`${error} Showing the latest available rooms.`}
+              onRetry={() => setRefreshKey((current) => current + 1)}
+              title="Discover could not refresh."
+            />
+          ) : null}
           <div className="room-card-grid">
             {rooms.map((room) => (
               <button
@@ -298,31 +291,33 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
           </div>
 
           {nextCursor ? (
-            <button
-              className="secondary-action discover-load-more"
-              disabled={isLoadingMore}
+            <Button
+              className="discover-load-more"
+              loading={isLoadingMore}
+              loadingLabel="Loading more rooms"
               onClick={() => void handleLoadMore()}
-              type="button"
             >
-              {isLoadingMore ? "Loading more rooms..." : "Load more rooms"}
-            </button>
+              Load more rooms
+            </Button>
           ) : null}
         </>
       ) : (
-        <div className="empty-state discover-state-panel">
-          <h3>{emptyStateCopy.title}</h3>
-          <p>{emptyStateCopy.body}</p>
-          <div className="action-row">
+        <EmptyState
+          action={<div className="action-row">
             {activeFilterCount > 0 ? (
-              <button className="secondary-action compact" onClick={clearFilters} type="button">
+              <Button onClick={clearFilters} size="small">
                 Clear filters
-              </button>
+              </Button>
             ) : null}
-            <button className="primary-action compact" onClick={() => onNavigate("/create-room")} type="button">
+            <Button onClick={() => onNavigate("/create-room")} size="small" variant="primary">
               Create room
-            </button>
-          </div>
-        </div>
+            </Button>
+          </div>}
+          className="discover-state-panel"
+          description={emptyStateCopy.body}
+          title={emptyStateCopy.title}
+          variant={activeFilterCount > 0 ? "no-results" : "no-data"}
+        />
       )}
     </section>
   );

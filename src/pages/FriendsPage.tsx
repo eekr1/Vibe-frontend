@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { AuthRequiredGate } from "../components/AuthRequiredGate";
-import { ApiClientError } from "../lib/api";
+import { EmptyState, InlineError, InlineLoader, UserRowSkeleton } from "../components/feedback";
+import { Button } from "../components/ui";
+import { safeErrorText } from "../lib/errorMapping";
 import { RoomInviteCard } from "../social/RoomInviteCard";
 import {
   dismissPeopleWatched,
@@ -29,7 +31,7 @@ const views: { id: View; label: string }[] = [
   { id: "blocked", label: "Blocked accounts" }
 ];
 
-function errorMessage(error: unknown) { return error instanceof ApiClientError ? error.message : "Your social lists could not be loaded."; }
+function errorMessage(error: unknown) { return safeErrorText(error, "Your social lists could not be loaded."); }
 function initialRelationship(state: RelationshipState["state"]): RelationshipState {
   if (state === "incoming_pending") return { actions: ["accept", "decline", "block", "report"], state };
   if (state === "outgoing_pending") return { actions: ["cancel", "block", "report"], state };
@@ -55,6 +57,7 @@ export function FriendsPage({ onNavigate }: { onNavigate: (path: string) => void
   const [invites, setInvites] = useState<RoomInvite[]>([]);
   const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [cursors, setCursors] = useState<Record<"blocked" | "friends" | "invites" | "requests" | "watched", string | null>>({ blocked: null, friends: null, invites: null, requests: null, watched: null });
@@ -72,7 +75,7 @@ export function FriendsPage({ onNavigate }: { onNavigate: (path: string) => void
         setCursors({ blocked: blockedData.nextCursor, friends: friendData.nextCursor, invites: inviteData.nextCursor, requests: requestData.nextCursor, watched: watchedData.nextCursor });
       })
       .catch((caught) => { if (active) setError(errorMessage(caught)); })
-      .finally(() => { if (active) setLoading(false); });
+      .finally(() => { if (active) { setHasLoaded(true); setLoading(false); } });
     return () => { active = false; };
   }, [currentUser?.id, refreshKey]);
 
@@ -91,6 +94,7 @@ export function FriendsPage({ onNavigate }: { onNavigate: (path: string) => void
   function reconcile() { setRefreshKey((current) => current + 1); }
   function replaceInvite(nextInvite: RoomInvite) { setInvites((items) => nextInvite.state === "pending" ? items.map((item) => item.id === nextInvite.id ? nextInvite : item) : items.filter((item) => item.id !== nextInvite.id)); reconcile(); }
   async function loadMore() {
+    if (loadingMore) return;
     const key = view === "incoming" || view === "outgoing" ? "requests" : view;
     const cursor = cursors[key];
     if (!cursor) return;
@@ -112,7 +116,7 @@ export function FriendsPage({ onNavigate }: { onNavigate: (path: string) => void
   }
 
   if (!isCheckingSession && !currentUser) return <AuthRequiredGate body="Friends, requests, reconnections, invites, and blocked accounts are private member tools." onLogin={() => onNavigate("/auth?mode=login&returnTo=%2Ffriends")} onSignup={() => onNavigate("/auth?mode=signup&returnTo=%2Ffriends")} title="Log in to manage your connections." />;
-  if (isCheckingSession) return <section className="surface-panel"><div aria-live="polite" className="inline-loading" role="status"><span aria-hidden="true" className="loader" />Checking your account</div></section>;
+  if (isCheckingSession) return <section className="surface-panel"><InlineLoader label="Checking your account" /></section>;
 
   const isEmpty = (view === "friends" && visibleFriends.length === 0) || ((view === "incoming" || view === "outgoing") && visibleRequests.length === 0) || (view === "invites" && visibleInvites.length === 0) || (view === "watched" && watched.length === 0) || (view === "blocked" && blocked.length === 0);
 
@@ -122,21 +126,22 @@ export function FriendsPage({ onNavigate }: { onNavigate: (path: string) => void
       <nav aria-label="Friends sections" className="friends-tabs">
         {views.map((item) => <button aria-current={view === item.id ? "page" : undefined} className={view === item.id ? "is-active" : ""} key={item.id} onClick={() => changeView(item.id)} type="button">{item.label}</button>)}
       </nav>
-      {error ? <div className="form-error" role="alert">{error} <button className="text-action compact" onClick={reconcile} type="button">Try again</button></div> : null}
-      {loading ? <div aria-live="polite" className="inline-loading" role="status"><span aria-hidden="true" className="loader" />Refreshing connections</div> : null}
+      {error ? <InlineError description={error} onRetry={reconcile} /> : null}
+      {loading && hasLoaded ? <InlineLoader label="Refreshing connections" /> : null}
 
       <section aria-labelledby={`${view}-title`} className="surface-panel friends-list-panel">
-        <div className="friends-list-heading"><div><p className="eyebrow">{views.find((item) => item.id === view)?.label}</p><h2 id={`${view}-title`}>{view === "watched" ? "Recent shared viewing" : view === "blocked" ? "People you have blocked" : views.find((item) => item.id === view)?.label}</h2></div><button className="secondary-action compact" disabled={loading} onClick={reconcile} type="button">Refresh</button></div>
+        <div className="friends-list-heading"><div><p className="eyebrow">{views.find((item) => item.id === view)?.label}</p><h2 id={`${view}-title`}>{view === "watched" ? "Recent shared viewing" : view === "blocked" ? "People you have blocked" : views.find((item) => item.id === view)?.label}</h2></div><Button loading={loading && hasLoaded} loadingLabel="Refreshing connections" onClick={reconcile} size="small">Refresh</Button></div>
         {view === "friends" ? <label className="friend-filter">Filter your friends<span className="field-hint">This only filters people already in your friends list.</span><input autoComplete="off" onChange={(event) => setFilter(event.target.value)} placeholder="Name or @username" type="search" value={filter} /></label> : null}
         <div className={view === "invites" ? "room-invite-list" : "social-identity-list"}>
+          {!hasLoaded && loading ? Array.from({ length: 5 }, (_, index) => <UserRowSkeleton key={index} />) : null}
           {view === "friends" ? visibleFriends.map((profile) => <SocialIdentity initialRelationship={initialRelationship("friends")} key={profile.id} onChanged={reconcile} onNavigate={onNavigate} profile={profile} />) : null}
           {view === "incoming" || view === "outgoing" ? visibleRequests.map((item) => <SocialIdentity context={`Expires ${new Date(item.expiresAt).toLocaleDateString()}`} initialRelationship={initialRelationship(item.direction === "incoming" ? "incoming_pending" : "outgoing_pending")} key={`${item.direction}:${item.profile.id}`} onChanged={reconcile} onNavigate={onNavigate} profile={item.profile} />) : null}
           {view === "invites" ? visibleInvites.map((invite) => <RoomInviteCard invite={invite} key={invite.id} onChanged={replaceInvite} onNavigate={onNavigate} />) : null}
           {view === "watched" ? watched.map((item) => <SocialIdentity context={item.label} initialRelationship={initialRelationship("none")} key={item.profile.id} onChanged={reconcile} onDismiss={() => void dismiss(item.profile)} onNavigate={onNavigate} profile={item.profile} />) : null}
           {view === "blocked" ? blocked.map((item) => <SocialIdentity context={`Blocked ${new Date(item.blockedAt).toLocaleDateString()}`} initialRelationship={initialRelationship("blocked")} key={item.profile.id} onChanged={reconcile} onNavigate={onNavigate} profile={item.profile} />) : null}
         </div>
-        {!loading && isEmpty ? <p className="empty-state">{view === "friends" && filter ? "No existing friends match this filter." : "Nothing to show here right now."}</p> : null}
-        {cursors[view === "incoming" || view === "outgoing" ? "requests" : view] ? <button className="secondary-action load-more-action" disabled={loadingMore} onClick={() => void loadMore()} type="button">{loadingMore ? "Loading..." : "Load more"}</button> : null}
+        {!loading && isEmpty ? <EmptyState title={view === "friends" && filter ? "No existing friends match this filter." : "Nothing to show here right now."} variant={view === "friends" && Boolean(filter) ? "no-results" : "no-data"} /> : null}
+        {cursors[view === "incoming" || view === "outgoing" ? "requests" : view] ? <Button className="load-more-action" loading={loadingMore} loadingLabel="Loading more connections" onClick={() => void loadMore()}>Load more</Button> : null}
       </section>
     </section>
   );

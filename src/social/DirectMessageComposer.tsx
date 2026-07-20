@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
+import { InlineError } from "../components/feedback";
+import { Button } from "../components/ui";
+import { safeErrorText } from "../lib/errorMapping";
 import { sendDirectMessage } from "./socialApi";
 
 type Props = {
@@ -46,8 +49,8 @@ export function DirectMessageComposer({ conversationId, onSent, targetUserId }: 
       if (textareaRef.current) {
         textareaRef.current.focus();
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to send message.");
+    } catch (err: unknown) {
+      setError(safeErrorText(err, "Failed to send message."));
     } finally {
       setSending(false);
     }
@@ -64,7 +67,7 @@ export function DirectMessageComposer({ conversationId, onSent, targetUserId }: 
 
   return (
     <div className="dm-composer">
-      {error && <p className="form-error compact" role="alert">{error}</p>}
+      {error ? <InlineError className="compact" description={error} /> : null}
       <div className="dm-composer-input-area">
         <textarea
           ref={textareaRef}
@@ -78,15 +81,16 @@ export function DirectMessageComposer({ conversationId, onSent, targetUserId }: 
           aria-label="Message content"
           rows={1}
         />
-        <button
-          className="primary-action compact"
+        <Button
+          className="compact"
           onClick={() => void handleSend()}
           disabled={!body.trim() || sending || body.length > 2000}
-          type="button"
-          aria-label="Send message"
+          loading={sending}
+          loadingLabel="Sending message"
+          variant="primary"
         >
-          {sending ? "..." : "Send"}
-        </button>
+          Send
+        </Button>
       </div>
       {charsLeft < 100 && (
         <div className={`dm-char-count ${charsLeft < 0 ? "is-error" : ""}`}>

@@ -1,8 +1,10 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { AuthRequiredGate } from "../components/AuthRequiredGate";
+import { InlineLoader } from "../components/feedback";
 import { Avatar } from "../components/ui";
 import { ApiClientError } from "../lib/api";
+import { safeErrorText } from "../lib/errorMapping";
 import {
   applyRoomModerationAction,
   checkRoomAccess,
@@ -114,7 +116,11 @@ function describeApiError(error: unknown, fallback: string) {
     return "The host has blocked you from rejoining this room.";
   }
 
-  return error.message;
+  return safeErrorText(error, fallback);
+}
+
+function describeRealtimeError(code: string, message: string, fallback: string) {
+  return safeErrorText(new ApiClientError(message, code), fallback);
 }
 
 const reportReasonOptions: Array<{ label: string; value: ReportReason }> = [
@@ -391,7 +397,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
     function subscribeToRoom() {
       socket.emit("room.subscribe", { requestId: makeRequestId(), roomId: activeRoomId }, (ack) => {
         if (!ack.ok) {
-          setRealtimeError(ack.error.message);
+          setRealtimeError(describeRealtimeError(ack.error.code, ack.error.message, "Live room updates could not start."));
           setSocketStatus("error");
         }
       });
@@ -404,7 +410,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
 
     socket.on("connect_error", (socketError) => {
       setSocketStatus("error");
-      setRealtimeError(socketError.message);
+      setRealtimeError(safeErrorText(socketError, "Live room updates could not connect."));
     });
 
     socket.on("disconnect", () => {
@@ -417,15 +423,16 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
 
     socket.on("connection.error", (payload) => {
       setSocketStatus("error");
-      setRealtimeError(payload.message);
+      setRealtimeError(describeRealtimeError(payload.code, payload.message, "Live room updates were interrupted."));
     });
 
     socket.on("access.feedback", (payload) => {
-      setRealtimeError(payload.message);
+      const safeMessage = describeRealtimeError(payload.code, payload.message, "Room access is currently unavailable.");
+      setRealtimeError(safeMessage);
 
       if (payload.code === "ROOM_USER_BANNED") {
         setAccessState("banned");
-        setError(payload.message);
+        setError(safeMessage);
       }
     });
 
@@ -518,7 +525,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       setParticipant(null);
       setPresenceParticipants([]);
       setAccessState("ended");
-      setRealtimeError(`Room ended: ${payload.reason}`);
+      setRealtimeError("This room has ended.");
     });
 
     return () => {
@@ -650,7 +657,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
       },
       (ack) => {
         if (!ack.ok) {
-          setRealtimeError(ack.error.message);
+          setRealtimeError(describeRealtimeError(ack.error.code, ack.error.message, "Playback sync could not update."));
           return;
         }
 
@@ -835,10 +842,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
   if (isCheckingSession || isLoadingRoom || isJoining) {
     return (
       <section className="surface-panel wide-panel">
-        <div aria-live="polite" className="inline-loading" role="status">
-          <span aria-hidden="true" className="loader" />
-          Entering room session and checking access
-        </div>
+        <InlineLoader label="Entering room session and checking access" />
       </section>
     );
   }

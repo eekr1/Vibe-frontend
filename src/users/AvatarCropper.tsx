@@ -1,5 +1,7 @@
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
-import { ApiClientError } from "../lib/api";
+import { ActionFeedback, InlineError } from "../components/feedback";
+import { Button } from "../components/ui";
+import { safeErrorText } from "../lib/errorMapping";
 import { removeManagedAvatar, uploadManagedAvatar, type ProfileAvatar } from "./profileApi";
 import { ProfileAvatarView } from "./ProfileIdentityCard";
 
@@ -15,7 +17,7 @@ export function AvatarCropper({ avatar, disabled, displayName, onChanged }: { av
   const [status, setStatus] = useState<"idle" | "uploading" | "success" | "removing">("idle");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const statusRef = useRef<HTMLParagraphElement>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => () => { if (loaded) URL.revokeObjectURL(loaded.url); }, [loaded]);
 
@@ -76,7 +78,7 @@ export function AvatarCropper({ avatar, disabled, displayName, onChanged }: { av
       if (inputRef.current) inputRef.current.value = "";
     } catch (caught) {
       setStatus("idle");
-      setError(caught instanceof ApiClientError ? caught.message : "Avatar upload failed. Try again.");
+      setError(safeErrorText(caught, "Avatar upload failed. Try again."));
     }
   }
 
@@ -89,7 +91,7 @@ export function AvatarCropper({ avatar, disabled, displayName, onChanged }: { av
       setStatus("success");
     } catch (caught) {
       setStatus("idle");
-      setError(caught instanceof ApiClientError ? caught.message : "Avatar removal failed. Try again.");
+      setError(safeErrorText(caught, "Avatar removal failed. Try again."));
     }
   }
 
@@ -122,8 +124,8 @@ export function AvatarCropper({ avatar, disabled, displayName, onChanged }: { av
       {status === "uploading" ? <progress aria-label="Avatar upload progress" max="100" value={progress}>{progress}%</progress> : null}
       {avatar.kind === "managed" && !loaded ? <button className="text-action" disabled={disabled || busy} onClick={() => inputRef.current?.focus()} type="button">Replace avatar</button> : null}
       {avatar.kind === "managed" && !loaded ? <button className="text-action avatar-remove-action" disabled={disabled || busy} onClick={() => void remove()} type="button">{status === "removing" ? "Removing…" : "Remove avatar"}</button> : null}
-      {error ? <p className="form-error" role="alert">{error} <button className="text-action compact" disabled={!loaded || busy} onClick={() => void upload()} type="button">Retry</button></p> : null}
-      {status === "success" ? <p aria-live="polite" className="state-banner success" ref={statusRef} tabIndex={-1}>Avatar updated. Room and profile identity will use the new version.</p> : null}
+      {error ? <InlineError action={<Button disabled={!loaded || busy} onClick={() => void upload()} size="small" variant="text">Retry</Button>} description={error} /> : null}
+      {status === "success" ? <div ref={statusRef} tabIndex={-1}><ActionFeedback tone="success">Avatar updated. Room and profile identity will use the new version.</ActionFeedback></div> : null}
     </section>
   );
 }

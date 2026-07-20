@@ -4,6 +4,8 @@ import { deleteDirectMessageConversationForUser, listDirectMessageConversations 
 import { DirectMessageList } from "./DirectMessageList";
 import { DirectMessageComposer } from "./DirectMessageComposer";
 import { useDirectMessageRealtime } from "./useDirectMessageRealtime";
+import { InlineError, InlineLoader } from "../components/feedback";
+import { safeErrorText } from "../lib/errorMapping";
 
 type Props = {
   conversationId: string;
@@ -53,7 +55,7 @@ export function ConversationPanel({ conversationId, minimized, onClose, onMinimi
       await deleteDirectMessageConversationForUser(conversation.conversationId);
       onClose();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Conversation could not be deleted.");
+      setError(safeErrorText(caught, "Conversation could not be deleted."));
     } finally {
       setIsDeleting(false);
     }
@@ -81,7 +83,7 @@ export function ConversationPanel({ conversationId, minimized, onClose, onMinimi
           <button aria-label="Close conversation" className="text-action compact" onClick={onClose} type="button">Close</button>
         </div>
       </div>
-      {error ? <p className="form-error compact" role="alert">{error}</p> : null}
+      {error ? <InlineError className="compact" description={error} /> : null}
       <div className="conversation-panel-body">
         {conversation ? (
           <>
@@ -89,7 +91,7 @@ export function ConversationPanel({ conversationId, minimized, onClose, onMinimi
             {!conversation.readOnly ? <DirectMessageComposer conversationId={conversationId} onSent={() => void refreshConversation()} targetUserId={conversation.partner.id} /> : null}
           </>
         ) : (
-          <div className="empty-state">Loading conversation...</div>
+          <InlineLoader label="Loading conversation" />
         )}
       </div>
     </aside>

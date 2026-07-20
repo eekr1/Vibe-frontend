@@ -1,5 +1,6 @@
 import { type FormEvent, useMemo, useState } from "react";
-import { ApiClientError } from "../lib/api";
+import { InlineError } from "../components/feedback";
+import { safeErrorText } from "../lib/errorMapping";
 import { apiRequest } from "../lib/api";
 import { useAuth } from "../auth/AuthContext";
 
@@ -161,11 +162,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
 
       onNavigate(returnTo);
     } catch (caughtError) {
-      if (caughtError instanceof ApiClientError) {
-        setError(caughtError.message);
-      } else {
-        setError("We could not complete this step. Please check the details and try again.");
-      }
+      setError(safeErrorText(caughtError, "We could not complete this step. Please check the details and try again."));
     } finally {
       setIsSubmitting(false);
     }
@@ -332,7 +329,7 @@ export function AuthPage({ onNavigate }: AuthPageProps) {
         ) : null}
 
         {successMessage ? <p aria-live="polite" className="form-success" role="status">{successMessage}</p> : null}
-        {error ? <p className="form-error" role="alert">{error}</p> : null}
+        {error ? <InlineError description={error} /> : null}
 
         <button className="primary-action full-width" disabled={isSubmitting || resetTokenMissing} type="submit">
           {isSubmitting

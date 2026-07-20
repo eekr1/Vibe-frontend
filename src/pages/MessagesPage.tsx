@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { EmptyState, InlineError, UserRowSkeleton } from "../components/feedback";
 import { ApiClientError } from "../lib/api";
+import { safeErrorText } from "../lib/errorMapping";
 import { type Conversation, deleteDirectMessageConversationForUser, listDirectMessageConversations } from "../social/socialApi";
 import { DirectMessageList } from "../social/DirectMessageList";
 import { DirectMessageComposer } from "../social/DirectMessageComposer";
@@ -11,8 +13,7 @@ function isFeatureDisabled(error: unknown) {
 
 function messageError(error: unknown) {
   if (isFeatureDisabled(error)) return "Direct messages are not enabled on this environment yet.";
-  if (error instanceof ApiClientError) return error.message;
-  return "Messages are temporarily unavailable.";
+  return safeErrorText(error, "Messages are temporarily unavailable.");
 }
 
 export function MessagesPage({ onNavigate }: { onNavigate: (path: string) => void }) {
@@ -40,9 +41,6 @@ export function MessagesPage({ onNavigate }: { onNavigate: (path: string) => voi
       setActiveConversationId(nextActive);
       setDraftTargetUserId(nextActive ? null : targetUserId);
     } catch (caught) {
-      setConversations([]);
-      setActiveConversationId(null);
-      setDraftTargetUserId(null);
       setFeatureDisabled(isFeatureDisabled(caught));
       setError(messageError(caught));
     } finally {
@@ -74,7 +72,7 @@ export function MessagesPage({ onNavigate }: { onNavigate: (path: string) => voi
       setActiveConversationId(null);
       await refresh(null);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Conversation could not be deleted.");
+      setError(safeErrorText(caught, "Conversation could not be deleted."));
     } finally {
       setDeleting(false);
     }
@@ -85,11 +83,11 @@ export function MessagesPage({ onNavigate }: { onNavigate: (path: string) => voi
       <div className="messages-sidebar">
         <h2>Recent Conversations</h2>
         {loading ? (
-          <p className="social-rail-state">Loading messages...</p>
+          <div aria-label="Loading messages">{Array.from({ length: 5 }, (_, index) => <UserRowSkeleton key={index} />)}</div>
         ) : featureDisabled ? (
-          <p className="empty-state">Messages are not enabled here yet.</p>
+          <EmptyState title="Messages are not enabled here yet." />
         ) : conversations.length === 0 ? (
-          <p className="empty-state">No recent conversations.</p>
+          <EmptyState title="No recent conversations." />
         ) : (
           <ul className="messages-conversation-list">
             {conversations.map((conversation) => (
@@ -116,7 +114,7 @@ export function MessagesPage({ onNavigate }: { onNavigate: (path: string) => voi
         )}
       </div>
       <div className="messages-main">
-        {error ? <p className="form-error" role="alert">{error} {!featureDisabled ? <button className="text-action compact" onClick={() => void refresh(activeConversationId)} type="button">Retry</button> : null}</p> : null}
+        {error ? <InlineError description={error} onRetry={featureDisabled ? undefined : () => refresh(activeConversationId)} /> : null}
         {activeConversation ? (
           <>
             <div className="messages-main-header">

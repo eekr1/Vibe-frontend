@@ -3,6 +3,8 @@ import { type DirectMessage, blockMember, listDirectMessages, markDirectMessages
 import { RoomInviteCard } from "./RoomInviteCard";
 import { ReportDialog } from "./ReportDialog";
 import { useDirectMessageRealtime } from "./useDirectMessageRealtime";
+import { EmptyState, InlineError, MessageSkeleton } from "../components/feedback";
+import { safeErrorText } from "../lib/errorMapping";
 
 type Props = {
   conversationId: string;
@@ -19,6 +21,7 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [invites, setInvites] = useState<RoomInvite[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeReportMessage, setActiveReportMessage] = useState<DirectMessage | null>(null);
   const lastReadMessageIdRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -34,6 +37,7 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
   }, [conversationId]);
   const loadData = useCallback(async (options: { silent?: boolean } = {}) => {
     if (!options.silent) setLoading(true);
+    setError(null);
     try {
       const [msgPage, invPage] = await Promise.all([
         listDirectMessages(conversationId),
@@ -42,6 +46,8 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
       setMessages(msgPage.items);
       setInvites(invPage.items.filter((invite) => invite.inviter.id === partnerId || invite.recipient.id === partnerId));
       markVisibleRead(msgPage.items);
+    } catch (caught) {
+      setError(safeErrorText(caught, "Messages could not be refreshed."));
     } finally {
       if (!options.silent) setLoading(false);
     }
@@ -50,6 +56,7 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
     let active = true;
     lastReadMessageIdRef.current = null;
     setLoading(true);
+    setError(null);
     Promise.all([
       listDirectMessages(conversationId),
       listRoomInvites()
@@ -59,8 +66,8 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
       setInvites(invPage.items.filter((invite) => invite.inviter.id === partnerId || invite.recipient.id === partnerId));
       markVisibleRead(msgPage.items);
       setLoading(false);
-    }).catch(() => {
-      if (active) setLoading(false);
+    }).catch((caught) => {
+      if (active) { setError(safeErrorText(caught, "Messages could not be loaded.")); setLoading(false); }
     });
     return () => { active = false; };
   }, [conversationId, markVisibleRead, partnerId]);
@@ -122,10 +129,11 @@ export function DirectMessageList({ conversationId, partnerId, readOnly, onNavig
 
   return (
     <div className="dm-list-container" ref={scrollRef}>
+      {error ? <InlineError description={error} onRetry={() => loadData()} /> : null}
       {loading ? (
-        <div className="dm-loading">Loading messages...</div>
-      ) : items.length === 0 ? (
-        <div className="empty-state">No messages yet. Say hi!</div>
+        <div aria-label="Loading messages" className="dm-loading"><MessageSkeleton /><MessageSkeleton align="end" /><MessageSkeleton /></div>
+      ) : items.length === 0 && !error ? (
+        <EmptyState title="No messages yet. Say hi!" />
       ) : (
         <div className="dm-items">
           {items.map((item) => {

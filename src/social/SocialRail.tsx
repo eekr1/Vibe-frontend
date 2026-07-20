@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ActionFeedback, ConnectionBanner, EmptyState, InlineError, InlineLoader } from "../components/feedback";
 import { ApiClientError } from "../lib/api";
+import { safeErrorText } from "../lib/errorMapping";
 import { createRoomRealtimeSocket, type RoomRealtimeSocket } from "../rooms/realtimeClient";
 import type { MemberProfile, RelationshipState } from "../users/profileApi";
 import { RoomInviteCard } from "./RoomInviteCard";
@@ -59,8 +61,7 @@ function presenceRank(presence?: FriendPresence) {
 }
 
 function errorMessage(error: unknown) {
-  if (error instanceof ApiClientError) return error.message;
-  return "Social updates are temporarily unavailable.";
+  return safeErrorText(error, "Social updates are temporarily unavailable.");
 }
 
 function isFeatureDisabled(error: unknown) {
@@ -224,11 +225,11 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
           <button aria-selected={tab === "requests"} className={tab === "requests" ? "is-active" : ""} onClick={() => setTab("requests")} role="tab" type="button">Requests {incoming.length ? `(${incoming.length})` : ""}</button>
         </div>
 
-        {status === "loading" || status === "reconnecting" ? <p className="social-rail-state" role="status">{status === "loading" ? "Loading social updates..." : "Reconnecting social updates..."}</p> : null}
-        {status === "stale" ? <p className="social-rail-state is-warning" role="status">Realtime is reconnecting. Showing the latest loaded state.</p> : null}
-        {degraded ? <p className="social-rail-state is-warning">Presence is temporarily degraded; friends may appear offline.</p> : null}
-        {error ? <p className="form-error" role="alert">{error} <button className="text-action compact" onClick={() => void refresh()} type="button">Retry</button></p> : null}
-        {directMessagesError ? <p className="social-rail-state is-warning" role="status">Messages are temporarily unavailable; friends, requests, and invites still work.</p> : null}
+        {status === "loading" ? <InlineLoader label="Loading social updates" /> : null}
+        {status === "reconnecting" || status === "stale" ? <ConnectionBanner kind="reconnecting" /> : null}
+        {degraded ? <ConnectionBanner kind="degraded" /> : null}
+        {error ? <InlineError description={error} onRetry={() => refresh()} /> : null}
+        {directMessagesError ? <ActionFeedback tone="warning">Messages are temporarily unavailable; friends, requests, and invites still work.</ActionFeedback> : null}
 
         {tab === "friends" ? (
           <section className="social-rail-section" aria-label="Friends presence">
@@ -242,7 +243,7 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
                 </article>
               ))}
             </div>
-            {!filteredFriends.length ? <p className="empty-state">No friends to show here right now.</p> : null}
+            {status !== "loading" && !filteredFriends.length ? <EmptyState title="No friends to show here right now." /> : null}
           </section>
         ) : tab === "messages" ? (
           <section className="social-rail-section" aria-label="Direct messages">
@@ -262,7 +263,7 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
                 </button>
               ))}
             </div>
-            {!conversations.length ? <p className="empty-state">No recent conversations.</p> : null}
+            {status !== "loading" && !conversations.length ? <EmptyState title="No recent conversations." /> : null}
           </section>
         ) : tab === "invites" ? (
           <section className="social-rail-section" aria-label="Room invites">
@@ -270,7 +271,7 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
             <div className="social-rail-list room-invite-list">
               {visibleInvites.map((invite) => <RoomInviteCard compact invite={invite} key={invite.id} onChanged={replaceInvite} onNavigate={navigate} />)}
             </div>
-            {!visibleInvites.length ? <p className="empty-state">No room invites right now.</p> : null}
+            {status !== "loading" && !visibleInvites.length ? <EmptyState title="No room invites right now." /> : null}
           </section>
         ) : (
           <section className="social-rail-section" aria-label="Friend requests">
@@ -279,7 +280,7 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
               {incoming.map((item) => <SocialIdentity context={`Incoming - expires ${new Date(item.expiresAt).toLocaleDateString()}`} initialRelationship={initialRelationship("incoming_pending")} key={`in:${item.profile.id}`} onChanged={() => void refresh()} onNavigate={navigate} profile={item.profile} />)}
               {outgoing.map((item) => <SocialIdentity context={`Outgoing - expires ${new Date(item.expiresAt).toLocaleDateString()}`} initialRelationship={initialRelationship("outgoing_pending")} key={`out:${item.profile.id}`} onChanged={() => void refresh()} onNavigate={navigate} profile={item.profile} />)}
             </div>
-            {!requests.length ? <p className="empty-state">No pending requests right now.</p> : null}
+            {status !== "loading" && !requests.length ? <EmptyState title="No pending requests right now." /> : null}
           </section>
         )}
       </div>

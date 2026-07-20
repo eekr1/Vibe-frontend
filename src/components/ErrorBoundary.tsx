@@ -1,5 +1,6 @@
 ﻿import { Component, type ErrorInfo, type ReactNode } from "react";
 
+import { PageError } from "./feedback";
 import { Button } from "./ui";
 
 type ErrorBoundaryProps = {
@@ -30,22 +31,18 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (this.state.error) {
       return (
         <main className="error-screen product-error-screen">
-          <div className="product-error-panel">
-            <p className="eyebrow">Recovery</p>
-            <h1>Vibehall needs a fresh start for this page.</h1>
-            <p>
-              The room, account, or page view stopped rendering cleanly. Refresh once to reconnect to the app;
-              development details stay in the console for debugging.
-            </p>
-            <div className="action-row">
+          <PageError
+            action={<div className="action-row">
               <Button onClick={() => window.location.reload()} size="small" variant="primary">
                 Refresh page
               </Button>
               <Button onClick={() => window.location.assign("/")} size="small">
                 Go home
               </Button>
-            </div>
-          </div>
+            </div>}
+            description="This page stopped rendering safely. Refresh it once, or return to the hall."
+            title="Vibehall needs a fresh start for this page."
+          />
         </main>
       );
     }
