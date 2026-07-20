@@ -151,7 +151,7 @@
     min-width: 0;
   }
 
-  .managed-profile-avatar.is-large {
+  .ui-avatar--profile {
     height: 5.5rem;
     width: 5.5rem;
   }

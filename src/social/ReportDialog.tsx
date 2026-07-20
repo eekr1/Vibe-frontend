@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { Button, FormField, Modal, Select, Textarea } from "../components/ui";
 import { ApiClientError } from "../lib/api";
 import { submitReport, type ReportReason, type ReportTargetType } from "../rooms/roomApi";
 
@@ -38,7 +39,7 @@ function describeReportError(error: unknown) {
     return "This report target is no longer available. Refresh and try again.";
   }
 
-  return error.message;
+  return "Report could not be submitted. Please try again.";
 }
 
 export function ReportDialog({
@@ -55,12 +56,14 @@ export function ReportDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reason, setReason] = useState<ReportReason>("harassment");
   const [submitted, setSubmitted] = useState(false);
+  const titleRef = useRef<HTMLHeadingElement>(null);
 
   const title = useMemo(() => {
     if (targetType === "direct_message") return "Report direct message";
     return `Report ${targetLabel}`;
   }, [targetLabel, targetType]);
   const trimmedDetails = details.trim();
+  const detailsError = error === "Please add a short explanation for the safety team." ? error : null;
 
   async function submit() {
     if (!trimmedDetails) {
@@ -90,82 +93,81 @@ export function ReportDialog({
     try {
       await onBlock();
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "Block could not be completed. Please try again.");
+      setError("Block could not be completed. Please try again.");
     } finally {
       setIsBlocking(false);
     }
   }
 
   return (
-    <div aria-modal="true" className="report-dialog-backdrop" role="dialog">
-      <div className="report-dialog-panel">
+    <Modal
+      className="report-dialog-panel"
+      descriptionId="report-dialog-description"
+      dismissible={!isSubmitting && !isBlocking}
+      initialFocusRef={titleRef}
+      onClose={onClose}
+      titleId="report-dialog-title"
+    >
         <div className="report-dialog-header">
           <div>
             <p className="eyebrow">Safety report</p>
-            <h3>{title}</h3>
+            <h3 id="report-dialog-title" ref={titleRef} tabIndex={-1}>{title}</h3>
           </div>
-          <button className="text-action compact" onClick={onClose} type="button">
+          <Button onClick={onClose} size="small" variant="text">
             Close
-          </button>
+          </Button>
         </div>
 
         {submitted ? (
           <div className="report-confirmation">
             <h4>Report sent privately.</h4>
-            <p>
+            <p id="report-dialog-description">
               Thanks for helping keep Vibehall safe. Blocking is separate, so you can choose it only if you want to
               stop future interaction.
             </p>
             <div className="report-dialog-actions">
               {onBlock ? (
-                <button className="danger-action compact" disabled={isBlocking} onClick={() => void blockAfterReport()} type="button">
-                  {isBlocking ? "Blocking..." : "Block this member"}
-                </button>
+                <Button loading={isBlocking} loadingLabel="Blocking this member" onClick={() => void blockAfterReport()} size="small" variant="danger">Block this member</Button>
               ) : null}
-              <button className="primary-action compact" onClick={onClose} type="button">
+              <Button onClick={onClose} size="small" variant="primary">
                 Done
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
           <>
-            <label>
-              Reason
-              <select onChange={(event) => setReason(event.target.value as ReportReason)} value={reason}>
+            <FormField label="Reason" required>
+              <Select onChange={(event) => setReason(event.target.value as ReportReason)} value={reason}>
                 {reportReasons.map((reportReason) => (
                   <option key={reportReason.value} value={reportReason.value}>
                     {reportReason.label}
                   </option>
                 ))}
-              </select>
-            </label>
-            <label>
-              What happened?
-              <textarea
+              </Select>
+            </FormField>
+            <FormField error={detailsError} hint="Plain text, up to 1000 characters." label="What happened?" required>
+              <Textarea
                 maxLength={1000}
                 onChange={(event) => setDetails(event.target.value)}
                 placeholder="Give the safety team enough context to review this report..."
                 rows={5}
                 value={details}
               />
-            </label>
+            </FormField>
             <p className="report-dialog-count">{details.length}/1000</p>
-            <p className="form-feedback compact">
+            <p className="form-feedback compact" id="report-dialog-description">
               Reports are private. If this is a DM report, Vibehall captures protected evidence for moderator review.
             </p>
             <div className="report-dialog-actions">
-              <button className="secondary-action compact" disabled={isSubmitting} onClick={onClose} type="button">
+              <Button disabled={isSubmitting} onClick={onClose} size="small">
                 Cancel
-              </button>
-              <button className="primary-action compact" disabled={isSubmitting} onClick={() => void submit()} type="button">
-                {isSubmitting ? "Submitting..." : "Submit report"}
-              </button>
+              </Button>
+              <Button loading={isSubmitting} loadingLabel="Submitting report" onClick={() => void submit()} size="small" variant="primary">Submit report</Button>
             </div>
           </>
         )}
 
-        {error ? <p className="form-error compact" role="alert">{error}</p> : null}
-      </div>
-    </div>
+        {error && error !== detailsError ? <p className="form-error compact" role="alert">{error}</p> : null}
+    </Modal>
   );
 }

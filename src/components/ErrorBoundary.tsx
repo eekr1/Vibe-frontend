@@ -1,5 +1,7 @@
 ﻿import { Component, type ErrorInfo, type ReactNode } from "react";
 
+import { Button } from "./ui";
+
 type ErrorBoundaryProps = {
   children: ReactNode;
 };
@@ -36,12 +38,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               development details stay in the console for debugging.
             </p>
             <div className="action-row">
-              <button className="primary-action compact" onClick={() => window.location.reload()} type="button">
+              <Button onClick={() => window.location.reload()} size="small" variant="primary">
                 Refresh page
-              </button>
-              <button className="secondary-action compact" onClick={() => window.location.assign("/")} type="button">
+              </Button>
+              <Button onClick={() => window.location.assign("/")} size="small">
                 Go home
-              </button>
+              </Button>
             </div>
           </div>
         </main>

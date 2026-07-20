@@ -4,21 +4,13 @@ import { useAuth } from "../auth/AuthContext";
 import { getNotificationSummary, type NotificationSummary } from "../social/socialApi";
 import { SocialRail } from "../social/SocialRail";
 import { ConversationPanel } from "../social/ConversationPanel";
+import { Avatar } from "./ui";
 
 type AppShellProps = {
   activeRoute: RouteDefinition;
   onNavigate: (path: string) => void;
   routes: RouteDefinition[];
 };
-
-function getInitials(displayName: string) {
-  return displayName
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "V";
-}
 
 const hiddenSocialRoutes = new Set(["*", "/admin", "/auth", "/auth/reset", "/community-guidelines", "/privacy", "/support", "/terms"]);
 const emptySummary: NotificationSummary = { actionableCount: 0, unreadCount: 0 };
@@ -98,11 +90,7 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
                     Friends
                   </button>
                   <button className="account-button" onClick={() => onNavigate("/profile")} type="button">
-                    {currentUser.avatarUrl ? (
-                      <img alt="" className="account-avatar" height="28" src={currentUser.avatarUrl} width="28" />
-                    ) : (
-                      <span className="account-avatar" aria-hidden="true">{getInitials(currentUser.displayName)}</span>
-                    )}
+                    <Avatar displayName={currentUser.displayName} size="small" src={currentUser.avatarUrl} />
                     <span className="account-copy">
                       <span className="account-name">{currentUser.displayName}</span>
                       <span className="account-meta">Profile</span>

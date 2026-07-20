@@ -595,29 +595,6 @@
   color: var(--color-text);
 }
 
-.identity-avatar,
-.message-avatar {
-  align-items: center;
-  background: var(--color-warning-surface);
-  border: 1px solid var(--color-warning-border);
-  border-radius: var(--radius-pill);
-  color: var(--color-accent-soft);
-  display: inline-flex;
-  flex: 0 0 auto;
-  font-size: 0.78rem;
-  font-weight: 900;
-  height: 2.25rem;
-  justify-content: center;
-  object-fit: cover;
-  overflow: hidden;
-  width: 2.25rem;
-}
-
-.message-avatar {
-  height: 2rem;
-  width: 2rem;
-}
-
 .room-meta-strip span,
 .host-control-strip {
   max-width: min(100%, 20rem);

@@ -33,6 +33,17 @@
   --font-size-label: var(--font-size-helper);
   --font-size-metadata: var(--font-size-caption);
 
+  /* Shared control and identity sizes. */
+  --control-height-small: 2.25rem;
+  --control-height-default: 2.75rem;
+  --control-height-large: 3rem;
+  --control-hit-area: 2.75rem;
+  --avatar-size-presence: 1.5rem;
+  --avatar-size-small: 2rem;
+  --avatar-size-default: 2.5rem;
+  --avatar-size-large: 3rem;
+  --avatar-size-profile: 7rem;
+
   /* Locked Hall, surface, text and border system. */
   --color-bg-hall: #090a0f;
   --color-surface-standard: #10121a;

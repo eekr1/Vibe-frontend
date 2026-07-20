@@ -1,6 +1,7 @@
-import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { AuthRequiredGate } from "../components/AuthRequiredGate";
+import { Button, FormField, Input, Modal } from "../components/ui";
 import { ApiClientError } from "../lib/api";
 import { AvatarCropper } from "../users/AvatarCropper";
 import { getMyProfile, requestAccountDeletion, updateMyProfile, updateSocialSettings, type MyProfileData, type SocialSettings } from "../users/profileApi";
@@ -27,11 +28,11 @@ export function ProfileSettingsPage({ onNavigate }: { onNavigate: (path: string)
   const [deletionOpen, setDeletionOpen] = useState(false);
   const [deletionPassword, setDeletionPassword] = useState("");
   const [deletionConfirmation, setDeletionConfirmation] = useState("");
+  const [deletionError, setDeletionError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deletionSubmitted, setDeletionSubmitted] = useState(false);
   const feedbackRef = useRef<HTMLParagraphElement>(null);
   const dialogTitleRef = useRef<HTMLHeadingElement>(null);
-  const dialogRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -56,7 +57,6 @@ export function ProfileSettingsPage({ onNavigate }: { onNavigate: (path: string)
     return () => { window.removeEventListener("beforeunload", beforeUnload); window.removeEventListener("vibehall:before-navigate", beforeNavigate); };
   }, [dirty]);
 
-  useEffect(() => { if (deletionOpen) queueMicrotask(() => dialogTitleRef.current?.focus()); }, [deletionOpen]);
   useEffect(() => { if (error || success) queueMicrotask(() => feedbackRef.current?.focus()); }, [error, success]);
 
   async function saveProfile(event: FormEvent) {
@@ -81,23 +81,12 @@ export function ProfileSettingsPage({ onNavigate }: { onNavigate: (path: string)
   }
 
   async function deleteAccount(event: FormEvent) {
-    event.preventDefault(); setError(null); setDeleting(true);
+    event.preventDefault(); setDeletionError(null); setDeleting(true);
     try {
       await requestAccountDeletion({ confirmation: "DELETE", password: deletionPassword });
       setDeletionSubmitted(true); setDeletionOpen(false); await logout();
-    } catch (caught) { setError(message(caught, "Account deletion could not be requested.")); }
+    } catch { setDeletionError("Account deletion could not be requested. Check your password and try again."); }
     finally { setDeleting(false); }
-  }
-
-  function handleDialogKeyDown(event: KeyboardEvent) {
-    if (event.key === "Escape" && !deleting) { setDeletionOpen(false); return; }
-    if (event.key !== "Tab" || !dialogRef.current) return;
-    const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex]'));
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
   }
 
   if (deletionSubmitted) return <section className="surface-panel account-deletion-complete" role="status"><p className="eyebrow">Deletion requested</p><h2>You have been signed out.</h2><p>Your account deletion is processing safely. Protected report evidence follows its separate retention rules.</p><button className="secondary-action" onClick={() => onNavigate("/")} type="button">Return home</button></section>;
@@ -141,10 +130,40 @@ export function ProfileSettingsPage({ onNavigate }: { onNavigate: (path: string)
       <section className="surface-panel account-settings" id="account-settings" aria-labelledby="account-settings-title">
         <div className="settings-section-heading"><div><p className="eyebrow">Account</p><h2 id="account-settings-title">Permanent deletion</h2></div><span className="ui-badge">Re-auth required</span></div>
         <p>Deletion removes profile and social state, signs the account out, and schedules managed-avatar cleanup. Protected report evidence follows separate retention.</p>
-        <button className="danger-action" disabled={!enabled} onClick={() => setDeletionOpen(true)} type="button">Delete account permanently</button>
+        <button className="danger-action" disabled={!enabled} onClick={() => { setDeletionError(null); setDeletionOpen(true); }} type="button">Delete account permanently</button>
       </section>
 
-      {deletionOpen ? <div className="ui-overlay deletion-overlay" onKeyDown={handleDialogKeyDown}><section aria-labelledby="deletion-dialog-title" aria-modal="true" className="ui-dialog deletion-dialog" ref={dialogRef} role="dialog"><form onSubmit={deleteAccount}><p className="eyebrow">Irreversible action</p><h2 id="deletion-dialog-title" ref={dialogTitleRef} tabIndex={-1}>Delete your Vibehall account?</h2><ul><li>Your public profile and social access are removed.</li><li>Friend/invite/message cleanup follows the social lifecycle.</li><li>Protected safety evidence may remain for its controlled retention period.</li></ul><label>Current password<input autoComplete="current-password" onChange={(event) => setDeletionPassword(event.target.value)} required type="password" value={deletionPassword} /></label><label>Type DELETE to confirm<input autoComplete="off" onChange={(event) => setDeletionConfirmation(event.target.value)} required value={deletionConfirmation} /></label><div className="action-row"><button className="danger-action" disabled={deleting || deletionConfirmation !== "DELETE" || !deletionPassword} type="submit">{deleting ? "Requesting deletion…" : "Delete permanently"}</button><button className="secondary-action" disabled={deleting} onClick={() => setDeletionOpen(false)} type="button">Cancel</button></div></form></section></div> : null}
+      {deletionOpen ? (
+        <Modal
+          className="deletion-dialog"
+          descriptionId="deletion-dialog-description"
+          dismissible={!deleting}
+          initialFocusRef={dialogTitleRef}
+          onClose={() => setDeletionOpen(false)}
+          titleId="deletion-dialog-title"
+        >
+          <form onSubmit={deleteAccount}>
+            <p className="eyebrow">Irreversible action</p>
+            <h2 id="deletion-dialog-title" ref={dialogTitleRef} tabIndex={-1}>Delete your Vibehall account?</h2>
+            <ul id="deletion-dialog-description">
+              <li>Your public profile and social access are removed.</li>
+              <li>Friend/invite/message cleanup follows the social lifecycle.</li>
+              <li>Protected safety evidence may remain for its controlled retention period.</li>
+            </ul>
+            <FormField label="Current password" required>
+              <Input autoComplete="current-password" onChange={(event) => setDeletionPassword(event.target.value)} type="password" value={deletionPassword} />
+            </FormField>
+            <FormField hint="Enter the word exactly as shown." label="Type DELETE to confirm" required>
+              <Input autoComplete="off" onChange={(event) => setDeletionConfirmation(event.target.value)} value={deletionConfirmation} />
+            </FormField>
+            {deletionError ? <p className="form-error compact" role="alert">{deletionError}</p> : null}
+            <div className="action-row">
+              <Button disabled={deletionConfirmation !== "DELETE" || !deletionPassword} loading={deleting} loadingLabel="Requesting account deletion" type="submit" variant="danger">Delete permanently</Button>
+              <Button disabled={deleting} onClick={() => setDeletionOpen(false)}>Cancel</Button>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
     </section>
   );
 }

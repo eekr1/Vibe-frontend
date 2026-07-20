@@ -1,12 +1,16 @@
 import type { ReactNode } from "react";
+import { Avatar } from "../components/ui";
 import type { MemberProfile, ProfileAvatar } from "./profileApi";
 
 export function ProfileAvatarView({ avatar, displayName, size = "large" }: { avatar: ProfileAvatar; displayName: string; size?: "large" | "small" }) {
-  const className = `managed-profile-avatar is-${size}`;
-  return avatar.kind === "managed" ? (
-    <img alt={`${displayName}'s avatar`} className={className} height={size === "large" ? 112 : 48} src={size === "large" ? avatar.urls.large : avatar.urls.small} width={size === "large" ? 112 : 48} />
-  ) : (
-    <span aria-label={`${displayName}'s initials avatar`} className={`${className} is-initials`} role="img">{avatar.initials}</span>
+  return (
+    <Avatar
+      decorative={false}
+      displayName={displayName}
+      fallback={avatar.kind === "initials" ? avatar.initials : undefined}
+      size={size === "large" ? "profile" : "large"}
+      src={avatar.kind === "managed" ? (size === "large" ? avatar.urls.large : avatar.urls.small) : null}
+    />
   );
 }
 

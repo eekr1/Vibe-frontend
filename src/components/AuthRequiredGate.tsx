@@ -1,3 +1,5 @@
+import { Button } from "./ui";
+
 type AuthRequiredGateProps = {
   body?: string;
   onLogin: () => void;
@@ -17,12 +19,12 @@ export function AuthRequiredGate({
       <h2>{title}</h2>
       <p>{body}</p>
       <div className="action-row">
-        <button className="primary-action" onClick={onLogin} type="button">
+        <Button onClick={onLogin} variant="primary">
           Log in
-        </button>
-        <button className="secondary-action" onClick={onSignup} type="button">
+        </Button>
+        <Button onClick={onSignup}>
           Create account
-        </button>
+        </Button>
       </div>
     </section>
   );

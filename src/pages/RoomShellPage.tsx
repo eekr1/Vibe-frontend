@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { AuthRequiredGate } from "../components/AuthRequiredGate";
+import { Avatar } from "../components/ui";
 import { ApiClientError } from "../lib/api";
 import {
   applyRoomModerationAction,
@@ -149,17 +150,6 @@ function formatPlaybackTime(value: number) {
   }
 
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
-
-function getDisplayInitials(displayName: string) {
-  const initials = displayName
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join("");
-
-  return initials || "VH";
 }
 
 function describeSocketStatus(status: SocketStatus) {
@@ -897,11 +887,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
           </p>
           <h2>{room.title}</h2>
           <div className="room-host-line">
-            {room.host.avatarUrl ? (
-              <img alt="" className="identity-avatar" height="36" src={room.host.avatarUrl} width="36" />
-            ) : (
-              <span className="identity-avatar" aria-hidden="true">{getDisplayInitials(room.host.displayName)}</span>
-            )}
+            <Avatar displayName={room.host.displayName} src={room.host.avatarUrl} />
             <p>
               <strong>{room.host.displayName}</strong> is hosting this shared YouTube session.
               {isHost
@@ -1183,13 +1169,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
               {presenceParticipants.map((nextParticipant) => (
                 <li key={nextParticipant.id}>
                   <div className="presence-identity">
-                    {nextParticipant.user.avatarUrl ? (
-                      <img alt="" className="identity-avatar" height="36" src={nextParticipant.user.avatarUrl} width="36" />
-                    ) : (
-                      <span className="identity-avatar" aria-hidden="true">
-                        {getDisplayInitials(nextParticipant.user.displayName)}
-                      </span>
-                    )}
+                    <Avatar displayName={nextParticipant.user.displayName} src={nextParticipant.user.avatarUrl} />
                     <span>
                       <strong>{nextParticipant.user.displayName}</strong>
                       <small>{nextParticipant.role === "host" ? "Host" : "Participant"}</small>
@@ -1338,13 +1318,7 @@ export function RoomShellPage({ onNavigate }: RoomShellPageProps) {
                 <article className="message-item" key={message.id}>
                   <div className="message-item-header">
                     <span className="message-author-line">
-                      {message.author.avatarUrl ? (
-                        <img alt="" className="message-avatar" height="32" src={message.author.avatarUrl} width="32" />
-                      ) : (
-                        <span className="message-avatar" aria-hidden="true">
-                          {getDisplayInitials(message.author.displayName)}
-                        </span>
-                      )}
+                      <Avatar displayName={message.author.displayName} size="small" src={message.author.avatarUrl} />
                       <span>
                         <strong>{message.author.displayName}</strong>
                         <time dateTime={message.createdAt}>{formatMessageTime(message.createdAt)}</time>

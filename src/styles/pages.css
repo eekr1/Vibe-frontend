@@ -523,33 +523,6 @@
   padding: var(--space-3);
 }
 
-.managed-profile-avatar {
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-pill);
-  flex: 0 0 auto;
-  object-fit: cover;
-}
-
-.managed-profile-avatar.is-large {
-  height: 7rem;
-  width: 7rem;
-}
-
-.managed-profile-avatar.is-small {
-  height: 3rem;
-  width: 3rem;
-}
-
-.managed-profile-avatar.is-initials {
-  align-items: center;
-  background: var(--color-danger-surface-avatar);
-  color: var(--color-accent-soft);
-  display: inline-flex;
-  font-size: var(--font-size-title);
-  font-weight: 900;
-  justify-content: center;
-}
-
 .profile-unavailable,
 .account-deletion-complete {
   display: grid;
@@ -702,12 +675,6 @@
 .deletion-dialog li {
   color: var(--color-text-muted);
   line-height: var(--line-height-copy);
-}
-
-.deletion-overlay {
-  align-items: center;
-  display: grid;
-  justify-items: center;
 }
 
 .deletion-dialog {
@@ -1592,22 +1559,7 @@
   background: var(--color-surface);
 }
 
-.report-dialog-backdrop {
-  align-items: center;
-  background: var(--color-bg-overlay);
-  display: flex;
-  inset: 0;
-  justify-content: center;
-  padding: var(--space-4);
-  position: fixed;
-  z-index: var(--z-modal);
-}
-
 .report-dialog-panel {
-  background: var(--color-bg-glass-strong);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
   display: grid;
   gap: var(--space-3);
   max-width: 540px;
