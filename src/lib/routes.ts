@@ -22,6 +22,7 @@ export type RouteDefinition = {
   component: ComponentType<{ onNavigate: (path: string) => void }>;
   label: string;
   path: string;
+  shell: "admin" | "app" | "home" | "room" | "utility";
   showInPrimaryNav?: boolean;
   match?: (path: string) => boolean;
   title: string;
@@ -32,6 +33,7 @@ export const routes: RouteDefinition[] = [
     component: HomeShellPage,
     label: "Home",
     path: "/",
+    shell: "home",
     showInPrimaryNav: true,
     title: "Live rooms for shared YouTube moments"
   },
@@ -39,6 +41,7 @@ export const routes: RouteDefinition[] = [
     component: DiscoverShellPage,
     label: "Discover",
     path: "/discover",
+    shell: "app",
     showInPrimaryNav: true,
     title: "Discover live rooms"
   },
@@ -46,30 +49,36 @@ export const routes: RouteDefinition[] = [
     component: CreateRoomPage,
     label: "Create room",
     path: "/create-room",
+    shell: "app",
+    showInPrimaryNav: true,
     title: "Create a live room"
   },
   {
     component: RoomShellPage,
     label: "Room",
     path: "/room",
+    shell: "room",
     title: "Live room"
   },
   {
     component: FriendsPage,
     label: "Friends",
     path: "/friends",
+    shell: "app",
     title: "Friends and requests"
   },
   {
     component: MessagesPage,
     label: "Messages",
     path: "/messages",
+    shell: "app",
     title: "Direct messages"
   },
   {
     component: AuthPage,
     label: "Account",
     path: "/auth",
+    shell: "utility",
     showInPrimaryNav: false,
     title: "Log in or sign up"
   },
@@ -77,6 +86,7 @@ export const routes: RouteDefinition[] = [
     component: AuthPage,
     label: "Reset password",
     path: "/auth/reset",
+    shell: "utility",
     showInPrimaryNav: false,
     title: "Reset your password"
   },
@@ -84,12 +94,14 @@ export const routes: RouteDefinition[] = [
     component: OwnerProfilePage,
     label: "Profile",
     path: "/profile",
+    shell: "app",
     title: "Your member profile"
   },
   {
     component: ProfileSettingsPage,
     label: "Settings",
     path: "/settings",
+    shell: "app",
     title: "Profile, privacy, and account settings"
   },
   {
@@ -97,12 +109,14 @@ export const routes: RouteDefinition[] = [
     label: "Member profile",
     match: (path) => /^\/users\/[^/]+$/.test(path),
     path: "/users/:username",
+    shell: "app",
     title: "Member profile"
   },
   {
     component: AdminShellPage,
     label: "Admin",
     path: "/admin",
+    shell: "admin",
     showInPrimaryNav: false,
     title: "Admin control center"
   },
@@ -110,6 +124,7 @@ export const routes: RouteDefinition[] = [
     component: TermsPage,
     label: "Terms",
     path: "/terms",
+    shell: "utility",
     showInPrimaryNav: false,
     title: "Terms of Service"
   },
@@ -117,6 +132,7 @@ export const routes: RouteDefinition[] = [
     component: PrivacyPage,
     label: "Privacy",
     path: "/privacy",
+    shell: "utility",
     showInPrimaryNav: false,
     title: "Privacy Policy"
   },
@@ -124,6 +140,7 @@ export const routes: RouteDefinition[] = [
     component: CommunityGuidelinesPage,
     label: "Guidelines",
     path: "/community-guidelines",
+    shell: "utility",
     showInPrimaryNav: false,
     title: "Community Guidelines"
   },
@@ -131,6 +148,7 @@ export const routes: RouteDefinition[] = [
     component: SupportPage,
     label: "Support",
     path: "/support",
+    shell: "utility",
     showInPrimaryNav: false,
     title: "Support"
   }
@@ -140,6 +158,7 @@ export const notFoundRoute: RouteDefinition = {
   component: NotFoundPage,
   label: "Not found",
   path: "*",
+  shell: "utility",
   showInPrimaryNav: false,
   title: "Page not found"
 };

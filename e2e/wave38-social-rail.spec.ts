@@ -43,7 +43,7 @@ test("Social Rail opens from topbar, sorts presence and reconciles request atten
   await page.goto("/");
   await expect(page.getByRole("button", { name: /Social updates, 3 unread or actionable/ })).toBeVisible();
   await page.getByRole("button", { name: /Social updates/ }).click();
-  await expect(page.getByRole("complementary", { name: "Social Rail" })).toBeVisible();
+  await expect(page.locator("#social-rail .social-rail-panel")).toBeVisible();
   await expect(page.getByText("Grace Hopper")).toBeVisible();
   await expect(page.getByText("Online")).toBeVisible();
   await expect(page.getByText("Bob Stone")).toBeVisible();
@@ -53,24 +53,27 @@ test("Social Rail opens from topbar, sorts presence and reconciles request atten
   await expect(page.getByText(/Incoming .* expires/)).toBeVisible();
   await expect(page.getByText(/Outgoing .* expires/)).toBeVisible();
   await page.getByRole("button", { name: "Mark all read" }).click();
-  await expect(page.getByRole("button", { name: "Social updates" })).toBeVisible();
+  await expect(page.getByRole("button", { exact: true, name: "Social" })).toBeVisible();
 });
 
 test("Social Rail respects route eligibility and local open preference", async ({ page }) => {
   await mockRailApi(page);
   await page.goto("/");
   await page.getByRole("button", { name: /Social updates/ }).click();
-  await expect(page.locator("#social-rail")).toHaveClass(/is-open/);
+  await expect(page.locator("#social-rail")).toHaveClass(/is-expanded/);
   await page.goto("/discover");
-  await expect(page.locator("#social-rail")).toHaveClass(/is-open/);
+  await expect(page.locator("#social-rail")).toHaveClass(/is-expanded/);
   await page.goto("/auth");
   await expect(page.getByRole("button", { name: /Social updates/ })).toHaveCount(0);
 });
 
-test("Room route uses Social drawer without compressing room layout", async ({ page }) => {
+test("Room route removes every global shell-owned surface", async ({ page }) => {
   await mockRailApi(page);
   await page.goto("/room");
-  await page.getByRole("button", { name: /Social updates/ }).click();
-  await expect(page.locator("#social-rail")).toHaveClass(/is-drawer/);
-  await expect(page.locator("main.main-surface")).not.toHaveClass(/has-social-rail/);
+  await expect(page.locator(".topbar")).toHaveCount(0);
+  await expect(page.locator(".page-masthead")).toHaveCount(0);
+  await expect(page.locator("#social-rail")).toHaveCount(0);
+  await expect(page.locator(".docked-conversation-wrapper")).toHaveCount(0);
+  await expect(page.locator(".trust-footer")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Social updates/ })).toHaveCount(0);
 });

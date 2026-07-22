@@ -1071,10 +1071,6 @@
   padding: 0 var(--space-1);
 }
 
-.main-surface.has-social-rail {
-  padding-right: clamp(1.25rem, 24vw, 19rem);
-}
-
 .social-rail {
   inset: 5.25rem var(--space-4) auto auto;
   max-height: calc(100vh - 6.5rem);
@@ -1088,7 +1084,7 @@
   z-index: var(--z-menu);
 }
 
-.social-rail.is-open {
+.social-rail.is-expanded {
   opacity: 1;
   pointer-events: auto;
   transform: translateX(0);
@@ -1098,10 +1094,12 @@
   z-index: var(--z-overlay);
 }
 
+.social-rail-compact {
+  display: none;
+}
+
 .social-rail-panel {
-  background:
-    linear-gradient(145deg, var(--color-surface-glass-strong), var(--color-bg-glass-strong)),
-    var(--color-surface);
+  background: var(--color-surface-standard);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-surface);
@@ -1110,6 +1108,93 @@
   max-height: inherit;
   overflow: hidden auto;
   padding: var(--space-4);
+}
+
+@media (min-width: 1041px) {
+  .social-rail.is-rail {
+    background: var(--color-surface-standard);
+    border-right: 1px solid var(--color-border-subtle);
+    bottom: 0;
+    display: flex;
+    inset: var(--shell-header-height) auto 0 0;
+    max-height: none;
+    opacity: 1;
+    overflow: hidden;
+    pointer-events: auto;
+    transform: none;
+    transition: width var(--motion-surface) var(--motion-ease-standard);
+    width: var(--social-rail-closed-width);
+    z-index: var(--z-sticky);
+  }
+
+  .social-rail.is-rail.is-expanded {
+    width: var(--social-rail-open-width);
+  }
+
+  .social-rail-compact {
+    align-items: center;
+    display: flex;
+    flex: 1 0 var(--social-rail-closed-width);
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: var(--social-rail-closed-width);
+    padding: var(--space-3) var(--space-2);
+  }
+
+  .social-rail.is-expanded .social-rail-compact {
+    display: none;
+  }
+
+  .social-rail-compact .ui-icon-button {
+    border-color: transparent;
+    color: var(--color-text-muted);
+    flex: 0 0 auto;
+  }
+
+  .social-rail-compact .ui-icon-button.is-active,
+  .social-rail-compact .ui-icon-button:hover {
+    background: var(--color-surface-elevated);
+    color: var(--color-accent);
+  }
+
+  .social-rail-toggle-control {
+    display: inline-flex;
+    position: relative;
+  }
+
+  .social-rail-toggle-badge {
+    pointer-events: none;
+    position: absolute;
+    right: -0.25rem;
+    top: -0.25rem;
+  }
+
+  .social-rail-compact-divider {
+    background: var(--color-border-subtle);
+    height: 1px;
+    margin: var(--space-1) 0;
+    width: 2rem;
+  }
+
+  .social-rail-compact-spacer {
+    flex: 1 1 auto;
+  }
+
+  .social-rail.is-rail .social-rail-panel {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    height: 100%;
+    max-height: none;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .social-rail,
+  .social-rail.is-rail {
+    transition-duration: var(--motion-reduced);
+  }
 }
 
 .social-rail-header,

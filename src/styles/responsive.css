@@ -209,12 +209,6 @@
   }
 }
 
-@media (max-width: 1040px) {
-  .main-surface.has-social-rail {
-    padding-right: var(--page-gutter);
-  }
-}
-
 @media (max-width: 360px) {
   :root {
     --page-gutter: var(--page-gutter-compact);
@@ -233,7 +227,7 @@
     width: auto;
   }
 
-  .social-rail.is-open {
+  .social-rail.is-expanded {
     transform: translateY(0);
   }
 

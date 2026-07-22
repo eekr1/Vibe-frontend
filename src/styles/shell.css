@@ -1,10 +1,16 @@
 .app-shell {
+  --shell-header-height: 4rem;
+  --social-rail-closed-width: 4rem;
+  --social-rail-open-width: 15rem;
   min-height: 100vh;
+}
+
+.app-shell--home {
+  --shell-header-height: 4.5rem;
 }
 
 .topbar {
   background: var(--color-app-chrome);
-  backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--color-border-subtle);
   position: sticky;
   top: 0;
@@ -15,10 +21,15 @@
   align-items: center;
   display: grid;
   gap: var(--space-4);
-  grid-template-columns: minmax(11rem, 1fr) auto minmax(18rem, 1fr);
+  grid-template-columns: minmax(9rem, 1fr) auto minmax(12rem, 1fr);
   margin: 0 auto;
   max-width: var(--container-page);
-  padding: var(--space-3) var(--page-gutter);
+  min-height: var(--shell-header-height);
+  padding: 0 var(--page-gutter);
+}
+
+.topbar--home .topbar-inner {
+  gap: var(--space-6);
 }
 
 .brand {
@@ -29,27 +40,88 @@
   cursor: pointer;
   display: inline-flex;
   font: inherit;
-  gap: var(--space-3);
   justify-self: start;
+  min-height: var(--control-hit-area);
   min-width: 0;
   padding: 0;
   text-align: left;
 }
 
-.brand-mark {
-  align-items: center;
-  background: var(--color-accent);
-  border-radius: var(--radius-sm);
-  color: var(--color-accent-contrast);
-  display: inline-flex;
-  flex: 0 0 auto;
-  font-weight: 900;
-  height: 2.1rem;
-  justify-content: center;
-  width: 2.1rem;
+.brand-name {
+  font-family: var(--font-family-heading);
+  font-size: 1.18rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1;
 }
 
-.brand-copy,
+.topbar--home .brand-name {
+  font-size: 1.3rem;
+}
+
+.nav {
+  align-items: stretch;
+  align-self: stretch;
+  display: inline-flex;
+  gap: var(--space-1);
+  justify-content: center;
+}
+
+.nav-item {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 500;
+  justify-content: center;
+  min-height: var(--control-hit-area);
+  padding: 0 var(--space-4);
+  position: relative;
+  white-space: nowrap;
+}
+
+.nav-item::after {
+  background: transparent;
+  border-radius: var(--radius-pill);
+  bottom: 0;
+  content: "";
+  height: 2px;
+  left: var(--space-4);
+  position: absolute;
+  right: var(--space-4);
+}
+
+.nav-item:not(:disabled):hover {
+  color: var(--color-text);
+}
+
+.nav-item.is-active {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.nav-item.is-active::after {
+  background: var(--color-accent);
+}
+
+.nav-item:not(:disabled):active,
+.account-button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.shell-actions,
+.account-strip,
+.shell-auth-actions {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  min-width: 0;
+}
+
 .account-copy,
 .trust-footer-copy {
   display: flex;
@@ -57,12 +129,39 @@
   min-width: 0;
 }
 
-.brand-name {
-  font-weight: 850;
-  line-height: 1.1;
+.account-button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  gap: var(--space-2);
+  min-height: var(--control-hit-area);
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
 }
 
-.brand-subtitle,
+.account-button:hover,
+.account-button[aria-expanded="true"] {
+  background: var(--color-surface-interactive);
+  border-color: var(--color-border-subtle);
+  color: var(--color-text);
+}
+
+.account-name {
+  color: var(--color-text);
+  font-size: var(--font-size-label);
+  font-weight: 500;
+  line-height: 1.1;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .account-meta,
 .trust-footer-copy span {
   color: var(--color-text-muted);
@@ -70,98 +169,75 @@
   line-height: 1.35;
 }
 
-.nav {
+.account-caret {
+  flex: 0 0 auto;
+  transition: transform var(--motion-instant) var(--motion-ease-standard);
+}
+
+.account-button[aria-expanded="true"] .account-caret {
+  transform: rotate(180deg);
+}
+
+.account-placeholder {
   align-items: center;
-  background: var(--color-bg-glass);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-pill);
   display: inline-flex;
-  gap: var(--space-1);
-  justify-content: center;
-  padding: var(--space-1);
+  gap: var(--space-2);
+  min-height: var(--control-hit-area);
+  width: 8.5rem;
 }
 
-.nav-item {
-  background: transparent;
-  border: 1px solid transparent;
+.account-placeholder-avatar,
+.account-placeholder-copy {
+  animation: shell-placeholder-pulse 1.4s ease-in-out infinite;
+  background: var(--color-surface-elevated);
+  display: block;
+}
+
+.account-placeholder-avatar {
   border-radius: var(--radius-pill);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  font: inherit;
-  min-height: 2.15rem;
-  padding: var(--space-2) var(--space-4);
+  height: 2rem;
+  width: 2rem;
 }
 
-.nav-item:hover,
-.nav-item.is-active {
-  background: var(--color-surface);
-  border-color: var(--color-border-subtle);
-  color: var(--color-text);
+.account-placeholder-copy {
+  border-radius: var(--radius-pill);
+  height: 0.65rem;
+  width: 5.5rem;
 }
 
-.nav-item.is-active {
-  box-shadow: inset 0 0 0 1px var(--color-border-inverse);
+.shell-social-control {
+  display: inline-flex;
+  position: relative;
 }
 
-.shell-actions {
-  align-items: center;
-  display: flex;
+.shell-social-action.ui-icon-button {
+  border-color: transparent;
+}
+
+.shell-social-badge {
+  pointer-events: none;
+  position: absolute;
+  right: -0.15rem;
+  top: -0.1rem;
+}
+
+.profile-menu {
+  min-width: 13rem;
+}
+
+.profile-menu :where([role="menuitem"]) {
   gap: var(--space-3);
-  justify-content: flex-end;
-  min-width: 0;
 }
 
-.account-strip {
-  align-items: center;
-  display: inline-flex;
-  gap: var(--space-2);
-  justify-content: flex-end;
-  min-width: 0;
+.profile-menu :where([role="menuitem"].is-danger) {
+  color: var(--color-danger);
 }
 
-.account-chip,
-.account-button {
-  align-items: center;
-  background: var(--color-bg-glass);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-pill);
-  color: var(--color-text-muted);
-  display: inline-flex;
-  gap: var(--space-2);
-  min-height: 2.35rem;
-  min-width: 0;
-  padding: var(--space-1) var(--space-3);
-}
-
-.account-chip.is-loading {
-  color: var(--color-text-disabled);
-  min-width: 8.5rem;
-}
-
-.account-button {
-  cursor: pointer;
-  font: inherit;
-  max-width: 15rem;
-}
-
-.account-button:hover {
-  background: var(--color-surface);
-  border-color: var(--color-border-strong);
-  color: var(--color-text);
-}
-
-.account-name {
-  color: var(--color-text);
-  font-size: var(--font-size-label);
-  font-weight: 750;
-  line-height: 1.1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.shell-create-action {
-  white-space: nowrap;
+.profile-menu-separator {
+  background: var(--color-border-subtle);
+  display: block;
+  height: 1px;
+  margin: var(--space-1) var(--space-2);
 }
 
 .action-row {
@@ -170,10 +246,15 @@
   gap: 0.7rem;
 }
 
-.main-surface {
+.main-surface,
+.room-surface {
   margin: 0 auto;
   max-width: var(--container-page);
   padding: var(--page-gutter);
+}
+
+.room-surface {
+  min-height: 100vh;
 }
 
 .page-masthead {
@@ -235,11 +316,38 @@
   color: var(--color-text);
 }
 
-.nav-item:not(:disabled):hover {
-  background: var(--color-surface-interactive);
-  border-color: var(--color-border-strong);
+@media (min-width: 1041px) {
+  .app-shell.has-social-rail .main-surface,
+  .app-shell.has-social-rail .trust-footer {
+    margin-left: var(--social-rail-closed-width);
+    transition: margin-left var(--motion-surface) var(--motion-ease-standard);
+  }
+
+  .app-shell.has-social-rail.is-social-rail-expanded .main-surface,
+  .app-shell.has-social-rail.is-social-rail-expanded .trust-footer {
+    margin-left: var(--social-rail-open-width);
+  }
 }
-.nav-item:not(:disabled):active,
-.account-button:not(:disabled):active {
-  transform: translateY(1px);
+
+@keyframes shell-placeholder-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-caret,
+  .app-shell.has-social-rail .main-surface,
+  .app-shell.has-social-rail .trust-footer {
+    transition-duration: var(--motion-reduced);
+  }
+
+  .account-placeholder-avatar,
+  .account-placeholder-copy {
+    animation: none;
+  }
 }

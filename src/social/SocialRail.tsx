@@ -1,5 +1,14 @@
+import {
+  ChatCircleDotsIcon,
+  EnvelopeIcon,
+  GearIcon,
+  SidebarSimpleIcon,
+  UserPlusIcon,
+  UsersThreeIcon
+} from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActionFeedback, ConnectionBanner, EmptyState, InlineError, InlineLoader } from "../components/feedback";
+import { IconButton } from "../components/ui";
 import { ApiClientError } from "../lib/api";
 import { safeErrorText } from "../lib/errorMapping";
 import { createRoomRealtimeSocket, type RoomRealtimeSocket } from "../rooms/realtimeClient";
@@ -30,10 +39,10 @@ type Props = {
   onClose: () => void;
   onNavigate: (path: string) => void;
   onOpenConversation?: (conversationId: string) => void;
+  onToggle: () => void;
   open: boolean;
+  summary: NotificationSummary;
 };
-
-const emptySummary: NotificationSummary = { actionableCount: 0, unreadCount: 0 };
 
 function initialRelationship(state: RelationshipState["state"]): RelationshipState {
   if (state === "incoming_pending") return { actions: ["accept", "decline", "block", "report"], state };
@@ -79,14 +88,13 @@ function inviteSortValue(invite: RoomInvite) {
   return 2;
 }
 
-export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenConversation, open }: Props) {
+export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenConversation, onToggle, open, summary }: Props) {
   const [tab, setTab] = useState<RailTab>("friends");
   const [friends, setFriends] = useState<MemberProfile[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [requests, setRequests] = useState<RequestItem[]>([]);
   const [invites, setInvites] = useState<RoomInvite[]>([]);
   const [presence, setPresence] = useState<Record<string, FriendPresence>>({});
-  const [summary, setSummary] = useState<NotificationSummary>(emptySummary);
   const [filter, setFilter] = useState("");
   const [status, setStatus] = useState<RailStatus>("idle");
   const [degraded, setDegraded] = useState(false);
@@ -126,7 +134,6 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
       setInvites(inviteData.items);
       setPresence(Object.fromEntries(presenceData.items.map((item) => [item.userId, item])));
       setDegraded(presenceData.degraded);
-      setSummary(summaryData);
       onBadgeChange(summaryData);
 
       try {
@@ -168,7 +175,6 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
     socket.on("dm.message.created", () => { void refresh({ quiet: true }); });
     socket.on("dm.read.updated", () => { void refresh({ quiet: true }); });
     socket.on("notification.invalidated", (payload) => {
-      setSummary(payload.summary);
       onBadgeChange(payload.summary);
       void refresh({ quiet: true });
     });
@@ -182,7 +188,6 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
   async function markAllRead() {
     try {
       const next = await markAllNotificationsRead();
-      setSummary(next);
       onBadgeChange(next);
     } catch (caught) {
       setError(errorMessage(caught));
@@ -198,12 +203,77 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
 
   function navigate(path: string) {
     onNavigate(path);
-    onClose();
+    if (mode === "drawer") onClose();
   }
 
+  const combinedCount = summary.unreadCount + summary.actionableCount;
+  const currentPath = window.location.pathname;
+  const currentView = new URLSearchParams(window.location.search).get("view");
+
   return (
-    <aside aria-hidden={!open} aria-label="Social Rail" className={`social-rail ${open ? "is-open" : ""} is-${mode}`} id="social-rail">
-      <div className="social-rail-panel" role="complementary">
+    <aside
+      aria-label="Social Rail"
+      className={`social-rail ${open ? "is-expanded" : "is-collapsed"} is-${mode}`}
+      id="social-rail"
+    >
+      {mode === "rail" ? (
+        <nav aria-label="Social shortcuts" className="social-rail-compact">
+          <span className="social-rail-toggle-control">
+            <IconButton
+              aria-expanded={open}
+              icon={<SidebarSimpleIcon size={20} />}
+              label={open ? "Collapse Social Rail" : "Expand Social Rail"}
+              onClick={onToggle}
+              variant="text"
+            />
+            {combinedCount ? (
+              <span aria-hidden="true" className="social-badge social-rail-toggle-badge">
+                {combinedCount > 99 ? "99+" : combinedCount}
+              </span>
+            ) : null}
+          </span>
+          <span aria-hidden="true" className="social-rail-compact-divider" />
+          <IconButton
+            className={currentPath === "/friends" && !currentView ? "is-active" : ""}
+            icon={<UsersThreeIcon size={20} />}
+            label="Friends"
+            onClick={() => navigate("/friends")}
+            variant="text"
+          />
+          <IconButton
+            className={currentPath === "/messages" ? "is-active" : ""}
+            icon={<ChatCircleDotsIcon size={20} />}
+            label="Messages"
+            onClick={() => navigate("/messages")}
+            variant="text"
+          />
+          <IconButton
+            className={currentPath === "/friends" && currentView === "invites" ? "is-active" : ""}
+            icon={<EnvelopeIcon size={20} />}
+            label="Room invites"
+            onClick={() => navigate("/friends?view=invites")}
+            variant="text"
+          />
+          <IconButton
+            className={currentPath === "/friends" && currentView === "incoming" ? "is-active" : ""}
+            icon={<UserPlusIcon size={20} />}
+            label="Friend requests"
+            onClick={() => navigate("/friends?view=incoming")}
+            variant="text"
+          />
+          <span className="social-rail-compact-spacer" />
+          <IconButton
+            className={currentPath === "/settings" ? "is-active" : ""}
+            icon={<GearIcon size={20} />}
+            label="Settings"
+            onClick={() => navigate("/settings")}
+            variant="text"
+          />
+        </nav>
+      ) : null}
+
+      {open ? (
+        <div className="social-rail-panel" role="complementary">
         <div className="social-rail-header">
           <div>
             <p className="eyebrow">Social</p>
@@ -283,7 +353,8 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
             {status !== "loading" && !requests.length ? <EmptyState title="No pending requests right now." /> : null}
           </section>
         )}
-      </div>
+        </div>
+      ) : null}
     </aside>
   );
 }
