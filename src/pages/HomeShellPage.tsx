@@ -1,95 +1,151 @@
-import { useAuth } from "../auth/AuthContext";
+import { ArrowRightIcon, PlusIcon, SparkleIcon } from "@phosphor-icons/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import { useAuth, type CurrentUser } from "../auth/AuthContext";
+import { EmptyState, RoomCardSkeleton, SectionError } from "../components/feedback";
+import { Button } from "../components/ui";
+import { RoomCard } from "../rooms/RoomCard";
+import { listPublicRooms, type Room } from "../rooms/roomApi";
 
 type HomeShellPageProps = {
   onNavigate: (path: string) => void;
 };
 
+type HomeRoomsState =
+  | { rooms: Room[]; status: "error" }
+  | { rooms: Room[]; status: "loading" }
+  | { rooms: Room[]; status: "ready" };
+
+export const HOME_ROOM_LIMIT = 6;
+
+export function getHomeOpenRoomPath(currentUser: CurrentUser | null, isCheckingSession: boolean) {
+  if (currentUser || isCheckingSession) return "/create-room";
+  return "/auth?mode=login&returnTo=%2Fcreate-room";
+}
+
+export function selectHomeRooms(rooms: Room[]) {
+  return rooms
+    .filter((room) => room.visibility === "public" && room.state === "live")
+    .slice(0, HOME_ROOM_LIMIT);
+}
+
 export function HomeShellPage({ onNavigate }: HomeShellPageProps) {
-  const { currentUser } = useAuth();
-  const primaryLabel = currentUser ? "Create a room" : "Discover live rooms";
-  const primaryPath = currentUser ? "/create-room" : "/discover";
-  const secondaryLabel = currentUser ? "Discover rooms" : "Create a room";
-  const secondaryPath = currentUser ? "/discover" : "/create-room";
+  const { currentUser, isCheckingSession } = useAuth();
+  const [heroImageAvailable, setHeroImageAvailable] = useState(true);
+  const [roomState, setRoomState] = useState<HomeRoomsState>({ rooms: [], status: "loading" });
+  const requestSequence = useRef(0);
+
+  const loadRooms = useCallback(async () => {
+    const requestId = ++requestSequence.current;
+    setRoomState((current) => ({ rooms: current.rooms, status: "loading" }));
+
+    try {
+      const result = await listPublicRooms({ limit: HOME_ROOM_LIMIT });
+      if (requestSequence.current !== requestId) return;
+      setRoomState({ rooms: selectHomeRooms(result.rooms), status: "ready" });
+    } catch {
+      if (requestSequence.current !== requestId) return;
+      setRoomState((current) => ({ rooms: current.rooms, status: "error" }));
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadRooms();
+    return () => {
+      requestSequence.current += 1;
+    };
+  }, [loadRooms]);
+
+  const openRoomPath = getHomeOpenRoomPath(currentUser, isCheckingSession);
+  const showInitialLoading = roomState.status === "loading" && roomState.rooms.length === 0;
 
   return (
-    <section className="home-page">
-      <article className="home-hero surface-panel">
+    <div className="home-page">
+      <section aria-labelledby="home-title" className="home-hero">
         <div className="home-hero-copy">
-          <p className="eyebrow">Live social video rooms</p>
-          <h2>Turn a YouTube link into a room people can join right now.</h2>
-          <p>
-            Vibehall gives every shared watch moment a host, a live timeline, readable chat, and a clear path from
-            browsing to joining. Guests can look around first; members enter the room when they are ready.
+          <p className="home-kicker">
+            <SparkleIcon aria-hidden="true" size={20} weight="fill" />
+            <span>Enter the hall</span>
           </p>
-          <div className="hero-actions">
-            <button className="primary-action" onClick={() => onNavigate(primaryPath)} type="button">
-              {primaryLabel}
-            </button>
-            <button className="secondary-action" onClick={() => onNavigate(secondaryPath)} type="button">
-              {secondaryLabel}
-            </button>
+          <h1 id="home-title">
+            Turn a YouTube link into a <span>shared room.</span>
+          </h1>
+          <p className="home-hero-support">
+            Watch together. Chat in the moment.<br />
+            Meet people through shared rooms.
+          </p>
+          <div className="home-hero-actions">
+            <Button className="home-cta home-cta--primary" onClick={() => onNavigate("/discover")} size="large" variant="primary">
+              <span>Enter the hall</span>
+              <ArrowRightIcon aria-hidden="true" size={20} weight="bold" />
+            </Button>
+            <Button className="home-cta" onClick={() => onNavigate(openRoomPath)} size="large" variant="secondary">
+              <span>Open a room</span>
+              <PlusIcon aria-hidden="true" size={20} weight="bold" />
+            </Button>
           </div>
         </div>
 
-        <div className="home-room-preview" aria-label="Vibehall room flow preview">
-          <div className="preview-player">
-            <span className="preview-live-pill">Live room</span>
-            <div className="preview-play-mark" aria-hidden="true">Play</div>
-          </div>
-          <div className="preview-room-body">
-            <div>
-              <p className="eyebrow">Host-led session</p>
-              <h3>One shared timeline, one room conversation.</h3>
-            </div>
-            <div className="preview-room-meta">
-              <span>Public or private</span>
-              <span>Members join live</span>
-              <span>Clear moderation</span>
-            </div>
-          </div>
-        </div>
-      </article>
-
-      <div className="home-story-grid">
-        <article className="surface-panel home-story-card">
-          <span className="story-index">01</span>
-          <p className="eyebrow">Find a room</p>
-          <h3>Browse what is live without signing in.</h3>
-          <p>Discover stays open for guests, so the platform can feel alive before account friction appears.</p>
-        </article>
-        <article className="surface-panel home-story-card">
-          <span className="story-index">02</span>
-          <p className="eyebrow">Join the moment</p>
-          <h3>Room entry keeps identity and safety clear.</h3>
-          <p>When a guest chooses a room, Vibehall preserves the intent and asks them to log in or sign up.</p>
-        </article>
-        <article className="surface-panel home-story-card">
-          <span className="story-index">03</span>
-          <p className="eyebrow">Host quickly</p>
-          <h3>Create a live session from one YouTube link.</h3>
-          <p>Members choose a title, category, size, and visibility, then move directly into the live room.</p>
-        </article>
-      </div>
-
-      <section className="home-split-band">
-        <article className="surface-panel home-callout">
-          <p className="eyebrow">For the next room</p>
-          <h2>{currentUser ? `Welcome back, ${currentUser.displayName}.` : "Start by looking around."}</h2>
-          <p>
-            {currentUser
-              ? "Open a new room when you want to host, or browse public rooms when you want to join what is already happening."
-              : "You can browse public rooms first. Creating or entering a room starts the member flow so every live session has real identity behind it."}
-          </p>
-        </article>
-        <article className="surface-panel home-safety-note">
-          <p className="eyebrow">Calm by design</p>
-          <ul className="live-moment-list">
-            <li>Public rooms appear in Discover only while they are live.</li>
-            <li>Private rooms stay invite-link based and outside public browsing.</li>
-            <li>Room reports and host moderation remain part of the experience.</li>
-          </ul>
-        </article>
+        <figure aria-hidden="true" className={heroImageAvailable ? "home-hero-visual" : "home-hero-visual is-fallback"}>
+          {heroImageAvailable ? (
+            <img
+              alt=""
+              decoding="async"
+              fetchPriority="high"
+              height="896"
+              loading="eager"
+              onError={() => setHeroImageAvailable(false)}
+              src="/images/vibehall-home-hall.webp"
+              width="1792"
+            />
+          ) : null}
+        </figure>
       </section>
-    </section>
+
+      <section aria-labelledby="home-live-title" className="home-live-section">
+        <header className="home-live-header">
+          <div>
+            <p className="home-live-eyebrow"><span aria-hidden="true" /> Live rooms right now</p>
+            <h2 id="home-live-title">Step into a room that is already alive.</h2>
+            <p>Join a room and start watching together.</p>
+          </div>
+          <Button className="home-view-all" onClick={() => onNavigate("/discover")} size="small" variant="text">
+            <span>View all rooms</span>
+            <ArrowRightIcon aria-hidden="true" size={17} weight="bold" />
+          </Button>
+        </header>
+
+        {showInitialLoading ? (
+          <div aria-busy="true" aria-label="Loading live rooms" className="home-room-track home-room-track--loading" role="status">
+            <span className="visually-hidden">Loading live rooms</span>
+            {Array.from({ length: 4 }, (_, index) => <RoomCardSkeleton key={index} />)}
+          </div>
+        ) : null}
+
+        {roomState.status === "error" && roomState.rooms.length === 0 ? (
+          <SectionError
+            className="home-live-state"
+            description="The rest of the hall is still available while we try that again."
+            onRetry={loadRooms}
+            title="We couldn’t load live rooms."
+          />
+        ) : null}
+
+        {roomState.status === "ready" && roomState.rooms.length === 0 ? (
+          <EmptyState
+            action={<Button onClick={() => onNavigate(openRoomPath)} variant="primary">Open a room</Button>}
+            className="home-live-state"
+            description="Open the first room and give the hall somewhere to gather."
+            title="The hall is quiet right now."
+          />
+        ) : null}
+
+        {roomState.rooms.length > 0 ? (
+          <div aria-label="Live rooms" className="home-room-track">
+            {roomState.rooms.map((room) => <RoomCard key={room.id} onNavigate={onNavigate} room={room} />)}
+          </div>
+        ) : null}
+      </section>
+    </div>
   );
 }

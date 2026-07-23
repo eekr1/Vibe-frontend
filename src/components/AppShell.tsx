@@ -557,10 +557,12 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
       ) : null}
 
       <main className="main-surface">
-        <section aria-labelledby="page-title" className="page-masthead">
-          <p className="eyebrow">{activeRoute.label}</p>
-          <h1 id="page-title">{activeRoute.title}</h1>
-        </section>
+        {activeRoute.shell !== "home" ? (
+          <section aria-labelledby="page-title" className="page-masthead">
+            <p className="eyebrow">{activeRoute.label}</p>
+            <h1 id="page-title">{activeRoute.title}</h1>
+          </section>
+        ) : null}
 
         <Page onNavigate={onNavigate} />
       </main>
