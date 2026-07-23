@@ -2,6 +2,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { EmptyState, InlineLoader, RoomCardSkeleton, SectionError } from "../components/feedback";
 import { Button } from "../components/ui";
 import { safeErrorText } from "../lib/errorMapping";
+import { RoomCard } from "../rooms/RoomCard";
 import {
   listCategories,
   listPublicRooms,
@@ -19,15 +20,6 @@ const sortOptions: Array<{ label: string; value: DiscoverSort }> = [
   { label: "Most active", value: "active" },
   { label: "Nearly full", value: "nearly-full" }
 ];
-
-function getInitials(displayName: string) {
-  return displayName
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "V";
-}
 
 function getEmptyStateCopy(search: string, selectedCategory: RoomCategory | undefined) {
   if (search.trim()) {
@@ -253,40 +245,7 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
           ) : null}
           <div className="room-card-grid">
             {rooms.map((room) => (
-              <button
-                className="room-card"
-                key={room.id}
-                onClick={() => onNavigate(`/room?roomId=${room.id}`)}
-                type="button"
-              >
-                <span className="room-card-media">
-                  {room.source.thumbnailUrl ? (
-                    <img alt={room.card?.thumbnailAlt ?? ""} height="360" src={room.source.thumbnailUrl} width="640" />
-                  ) : (
-                    <span className="room-card-placeholder">YouTube</span>
-                  )}
-                  <span className="room-live-badge">Live</span>
-                </span>
-                <span className="room-card-body">
-                  <span className="room-card-meta">
-                    <span>{room.category.name}</span>
-                    {room.card?.isNearlyFull ? <span>Nearly full</span> : null}
-                  </span>
-                  <span className="room-card-title">{room.title}</span>
-                  <span className="room-card-host">
-                    {room.host.avatarUrl ? (
-                      <img alt="" height="30" src={room.host.avatarUrl} width="30" />
-                    ) : (
-                      <span className="room-host-avatar" aria-hidden="true">{getInitials(room.host.displayName)}</span>
-                    )}
-                    <span>{room.host.displayName} is hosting</span>
-                  </span>
-                  <span className="room-card-footer">
-                    <span>{room.card?.capacityLabel ?? `${room.activeParticipantCount}/${room.participantLimit}`} inside</span>
-                    <span>Join room</span>
-                  </span>
-                </span>
-              </button>
+              <RoomCard key={room.id} onNavigate={onNavigate} room={room} />
             ))}
           </div>
 

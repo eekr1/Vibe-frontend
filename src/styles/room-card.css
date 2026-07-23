@@ -1,0 +1,258 @@
+.room-card-frame {
+  clip-path: inset(-1.25rem round var(--radius-xl));
+  isolation: isolate;
+  min-width: 0;
+  position: relative;
+}
+
+.room-card-aura {
+  filter: blur(var(--room-card-aura-blur)) brightness(0.52) saturate(1.08);
+  height: 78%;
+  inset: 4% 5% auto;
+  max-width: none;
+  object-fit: cover;
+  opacity: var(--room-card-aura-opacity);
+  pointer-events: none;
+  position: absolute;
+  transform: scale(1.08);
+  transition: opacity var(--motion-surface) var(--motion-ease-standard);
+  width: 90%;
+  z-index: -1;
+}
+
+.room-card {
+  background: var(--color-surface-standard);
+  border: 1px solid var(--color-border-normal);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-surface);
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  position: relative;
+  text-align: left;
+  transition:
+    background-color var(--motion-surface) var(--motion-ease-standard),
+    border-color var(--motion-surface) var(--motion-ease-standard),
+    box-shadow var(--motion-surface) var(--motion-ease-standard),
+    transform var(--motion-surface) var(--motion-ease-standard);
+  width: 100%;
+}
+
+.room-card-media {
+  aspect-ratio: var(--room-card-media-aspect-ratio);
+  background: var(--color-surface-elevated);
+  display: block;
+  overflow: hidden;
+  position: relative;
+}
+
+.room-card-thumbnail,
+.room-card-media-placeholder {
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.room-card-thumbnail {
+  display: block;
+  object-fit: cover;
+  transform: scale(1);
+  transition: transform var(--motion-surface) var(--motion-ease-standard);
+}
+
+.room-card-media-placeholder {
+  background:
+    radial-gradient(circle at 72% 24%, var(--ambient-ember), transparent 42%),
+    var(--color-surface-elevated);
+  border: 0;
+  border-radius: 0;
+}
+
+.room-card-live {
+  background: var(--room-card-live-overlay);
+  border-color: var(--color-success-border);
+  color: var(--color-success-text);
+  left: var(--space-3);
+  position: absolute;
+  top: var(--space-3);
+}
+
+.room-card-body {
+  background: var(--color-surface-standard);
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3);
+  position: relative;
+}
+
+.room-card-meta,
+.room-card-footer {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.room-card-category {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-interface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-card-meta .ui-status-badge {
+  flex: 0 0 auto;
+}
+
+.room-card-title {
+  color: var(--color-text-primary);
+  display: -webkit-box;
+  font-family: var(--font-family-heading);
+  font-size: var(--font-size-card-title);
+  font-weight: var(--font-weight-heading);
+  line-height: 1.25;
+  min-height: 2.5em;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.room-card-host {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.room-card-host-copy {
+  display: grid;
+  font-size: var(--font-size-caption);
+  line-height: 1.3;
+  min-width: 0;
+}
+
+.room-card-host-copy > span {
+  color: var(--color-text-muted);
+}
+
+.room-card-host-copy strong {
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-interface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-card-participants,
+.room-card-entry {
+  align-items: center;
+  color: var(--color-text-muted);
+  display: inline-flex;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-interface);
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.room-card-participants span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-card-entry {
+  color: var(--color-accent-hover);
+  flex: 0 0 auto;
+  opacity: 0;
+  transform: translateX(-0.25rem);
+  transition:
+    opacity var(--motion-surface) var(--motion-ease-standard),
+    transform var(--motion-surface) var(--motion-ease-standard);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .room-card-frame:hover .room-card,
+  .room-card:focus-visible {
+    background: var(--color-surface-standard);
+    border-color: var(--color-border-active);
+    box-shadow: var(--shadow-elevated);
+    transform: translateY(var(--room-card-lift));
+  }
+
+  .room-card-frame:hover .room-card-thumbnail,
+  .room-card:focus-visible .room-card-thumbnail {
+    transform: scale(var(--room-card-thumbnail-hover-scale));
+  }
+
+  .room-card-frame:hover .room-card-aura,
+  .room-card-frame:focus-within .room-card-aura {
+    opacity: var(--room-card-aura-opacity-active);
+  }
+
+  .room-card-frame:hover .room-card-entry,
+  .room-card:focus-visible .room-card-entry {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (hover: none) {
+  .room-card-entry {
+    opacity: 1;
+    transform: none;
+  }
+
+  .room-card:active {
+    border-color: var(--color-border-active);
+    transform: scale(0.99);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .room-card-live .ui-status-indicator__dot {
+    animation: room-card-live-breathe 2.8s var(--motion-ease-standard) infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-card-frame:hover .room-card,
+  .room-card:active,
+  .room-card:focus-visible,
+  .room-card-thumbnail,
+  .room-card-entry {
+    transform: none;
+  }
+
+  .room-card-frame:hover .room-card-aura,
+  .room-card-frame:focus-within .room-card-aura {
+    opacity: var(--room-card-aura-opacity);
+  }
+}
+
+@media (max-width: 639px) {
+  .room-card-frame {
+    --room-card-aura-blur: var(--room-card-aura-blur-mobile);
+    --room-card-aura-opacity: var(--room-card-aura-opacity-mobile);
+    --room-card-aura-opacity-active: var(--room-card-aura-opacity-mobile);
+  }
+
+  .room-card-entry {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes room-card-live-breathe {
+  0%, 100% { opacity: 0.72; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1); }
+}

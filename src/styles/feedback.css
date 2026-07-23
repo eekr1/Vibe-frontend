@@ -34,12 +34,14 @@
   border: 1px solid var(--color-border-normal);
   border-radius: var(--radius-lg);
   display: grid;
-  gap: var(--space-3);
   min-width: 0;
-  padding: var(--space-3);
+  overflow: hidden;
 }
 
-.state-skeleton-card__media { aspect-ratio: 16 / 9; min-height: 0; width: 100%; }
+.state-skeleton-card__media { aspect-ratio: var(--room-card-media-aspect-ratio); border-radius: 0; min-height: 0; width: 100%; }
+.state-skeleton-card__body { display: grid; gap: var(--space-3); padding: var(--space-3); }
+.state-skeleton-card__identity { align-items: center; display: grid; gap: var(--space-2); grid-template-columns: auto minmax(0, 1fr); }
+.state-skeleton-card__avatar { border-radius: var(--radius-avatar); height: var(--avatar-size-small); width: var(--avatar-size-small); }
 
 .state-skeleton-row {
   align-items: center;

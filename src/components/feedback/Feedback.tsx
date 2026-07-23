@@ -56,7 +56,15 @@ export function RoomCardSkeleton() {
   return (
     <div aria-hidden="true" className="state-skeleton-card">
       <SkeletonBlock className="state-skeleton-card__media" radius="medium" />
-      <SkeletonText lines={2} />
+      <div className="state-skeleton-card__body">
+        <SkeletonBlock width="38%" />
+        <SkeletonText lines={2} />
+        <div className="state-skeleton-card__identity">
+          <SkeletonBlock className="state-skeleton-card__avatar" />
+          <SkeletonText lines={2} />
+        </div>
+        <SkeletonBlock width="46%" />
+      </div>
     </div>
   );
 }

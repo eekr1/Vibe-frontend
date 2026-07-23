@@ -43,6 +43,15 @@
   --avatar-size-default: 2.5rem;
   --avatar-size-large: 3rem;
   --avatar-size-profile: 7rem;
+  --room-card-media-aspect-ratio: 16 / 9;
+  --room-card-aura-blur: 96px;
+  --room-card-aura-blur-mobile: 80px;
+  --room-card-aura-opacity: 0.14;
+  --room-card-aura-opacity-active: 0.18;
+  --room-card-aura-opacity-mobile: 0.1;
+  --room-card-lift: -0.25rem;
+  --room-card-live-overlay: rgba(9, 10, 15, 0.84);
+  --room-card-thumbnail-hover-scale: 1.035;
 
   /* Locked Hall, surface, text and border system. */
   --color-bg-hall: #090a0f;

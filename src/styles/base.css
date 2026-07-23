@@ -73,7 +73,7 @@ a {
   cursor: not-allowed;
 }
 
-:where(button, .nav-item, .room-card, .surface-panel, .admin-row, .admin-nav-item) {
+:where(button, .nav-item, .surface-panel, .admin-row, .admin-nav-item) {
   transition:
     background-color var(--motion-fast) var(--motion-ease),
     border-color var(--motion-fast) var(--motion-ease),

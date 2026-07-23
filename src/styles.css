@@ -10,6 +10,7 @@
 @import "./styles/primitives.css";
 @import "./styles/forms.css";
 @import "./styles/feedback.css";
+@import "./styles/room-card.css";
 @import "./styles/pages.css";
 @import "./styles/room.css";
 @import "./styles/admin.css";
