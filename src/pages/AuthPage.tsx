@@ -1,368 +1,332 @@
-import { type FormEvent, useMemo, useState } from "react";
-import { InlineError } from "../components/feedback";
-import { safeErrorText } from "../lib/errorMapping";
-import { apiRequest } from "../lib/api";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ActionFeedback, InlineError } from "../components/feedback";
+import { Button, FormField, Input } from "../components/ui";
+import { ApiClientError, apiRequest } from "../lib/api";
+import { mapErrorToSafeMessage } from "../lib/errorMapping";
 import { useAuth } from "../auth/AuthContext";
 
-type AuthPageProps = {
-  onNavigate: (path: string) => void;
+type AuthPageProps = { onNavigate: (path: string) => void };
+export type AuthMode = "forgot" | "login" | "reset" | "signup";
+type AuthField =
+  | "displayName" | "email" | "emailOrUsername" | "password"
+  | "resetConfirmPassword" | "resetEmail" | "username";
+export type AuthFormValues = Record<AuthField, string>;
+export type AuthFieldErrors = Partial<Record<AuthField, string>>;
+
+const emptyValues: AuthFormValues = {
+  displayName: "", email: "", emailOrUsername: "", password: "",
+  resetConfirmPassword: "", resetEmail: "", username: ""
 };
 
-type AuthMode = "forgot" | "login" | "reset" | "signup";
+const copy: Record<AuthMode, { description: string; eyebrow: string; title: string }> = {
+  forgot: { description: "Enter your email. We will send a private reset link if an account exists.", eyebrow: "Password recovery", title: "Reset your password." },
+  login: { description: "Sign in with the identity you use across rooms, chat, and hosting.", eyebrow: "Welcome back", title: "Sign in to Vibehall." },
+  reset: { description: "Choose a new password. Reset links are private, single-use, and time-limited.", eyebrow: "Password recovery", title: "Choose a new password." },
+  signup: { description: "Create one identity for the rooms you join and the people you meet.", eyebrow: "New member", title: "Create your account." }
+};
 
-function readAuthMode(): AuthMode {
-  if (window.location.pathname === "/auth/reset") {
-    return "reset";
-  }
+const knownFields = new Set<AuthField>([
+  "displayName", "email", "emailOrUsername", "password",
+  "resetConfirmPassword", "resetEmail", "username"
+]);
 
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("mode") === "forgot") {
-    return "forgot";
-  }
+export function readAuthModeFromLocation(pathname: string, search: string): AuthMode {
+  if (pathname === "/auth/reset") return "reset";
+  const mode = new URLSearchParams(search).get("mode");
+  return mode === "forgot" || mode === "signup" ? mode : "login";
+}
 
-  return params.get("mode") === "signup" ? "signup" : "login";
+function readAuthMode() {
+  return readAuthModeFromLocation(window.location.pathname, window.location.search);
 }
 
 function readReturnTo() {
-  const params = new URLSearchParams(window.location.search);
-  const returnTo = params.get("returnTo");
-
-  if (!returnTo || !returnTo.startsWith("/")) {
-    return "/";
-  }
-
-  return returnTo;
+  const value = new URLSearchParams(window.location.search).get("returnTo");
+  return value?.startsWith("/") ? value : "/";
 }
 
 function readResetToken() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("token") ?? "";
+  return new URLSearchParams(window.location.search).get("token") ?? "";
 }
 
-function getIntentCopy(returnTo: string) {
-  if (returnTo.startsWith("/room")) {
-    return {
-      body: "Log in or create an account, then Vibehall will continue toward the room you chose.",
-      label: "Room entry"
-    };
-  }
+export function createAuthModePath(mode: Exclude<AuthMode, "reset">, returnTo: string) {
+  return "/auth?" + new URLSearchParams({ mode, returnTo }).toString();
+}
 
-  if (returnTo === "/create-room") {
-    return {
-      body: "Create a member account or log in, then continue to launching your room.",
-      label: "Host a room"
-    };
-  }
+function validEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
 
-  if (returnTo === "/profile") {
-    return {
-      body: "Sign in to manage the identity people see in rooms, chat, and reports.",
-      label: "Profile access"
-    };
+export function validateAuthForm(mode: AuthMode, values: AuthFormValues, token = ""): AuthFieldErrors {
+  const errors: AuthFieldErrors = {};
+  if (mode === "login") {
+    const identifier = values.emailOrUsername.trim();
+    if (!identifier) errors.emailOrUsername = "Enter your email or username.";
+    else if (identifier.length < 3 || identifier.length > 120) errors.emailOrUsername = "Use between 3 and 120 characters.";
+    if (!values.password) errors.password = "Enter your password.";
+    else if (values.password.length > 128) errors.password = "Password must be 128 characters or fewer.";
   }
+  if (mode === "signup") {
+    if (!validEmail(values.email)) errors.email = "Enter a valid email address.";
+    const username = values.username.trim().toLowerCase();
+    if (!username) errors.username = "Choose a username.";
+    else if (username.length < 3 || username.length > 24) errors.username = "Username must be between 3 and 24 characters.";
+    else if (!/^[a-z0-9_]+$/.test(username)) errors.username = "Use only letters, numbers, and underscores.";
+    const displayName = values.displayName.trim();
+    if (!displayName) errors.displayName = "Enter a display name.";
+    else if (displayName.length < 2 || displayName.length > 48) errors.displayName = "Display name must be between 2 and 48 characters.";
+    if (!values.password) errors.password = "Create a password.";
+    else if (values.password.length < 8 || values.password.length > 128) errors.password = "Password must be between 8 and 128 characters.";
+  }
+  if (mode === "forgot" && !validEmail(values.resetEmail)) errors.resetEmail = "Enter a valid email address.";
+  if (mode === "reset" && token) {
+    if (!values.password) errors.password = "Create a new password.";
+    else if (values.password.length < 8 || values.password.length > 128) errors.password = "Password must be between 8 and 128 characters.";
+    if (!values.resetConfirmPassword) errors.resetConfirmPassword = "Confirm your new password.";
+    else if (values.password !== values.resetConfirmPassword) errors.resetConfirmPassword = "The new passwords do not match.";
+  }
+  return errors;
+}
 
-  return {
-    body: "Membership keeps room ownership, chat identity, reports, and moderation history connected to one clear profile.",
-    label: "Member access"
+export function createAuthPayload(mode: AuthMode, values: AuthFormValues, token = "") {
+  if (mode === "login") return { emailOrUsername: values.emailOrUsername.trim(), password: values.password };
+  if (mode === "signup") return {
+    displayName: values.displayName.trim(), email: values.email.trim().toLowerCase(),
+    password: values.password, username: values.username.trim().toLowerCase()
   };
+  if (mode === "forgot") return { email: values.resetEmail.trim().toLowerCase() };
+  return { password: values.password, token: token.trim() };
 }
 
-async function requestPasswordReset(email: string) {
-  return apiRequest<{ message: string }>("/auth/password-reset/request", {
-    body: { email },
-    method: "POST"
-  });
+function errorsFromDetails(details: unknown): AuthFieldErrors {
+  if (!Array.isArray(details)) return {};
+  const errors: AuthFieldErrors = {};
+  for (const issue of details) {
+    if (!issue || typeof issue !== "object" || !("path" in issue) || !Array.isArray(issue.path)) continue;
+    const field = issue.path[0];
+    if (typeof field === "string" && knownFields.has(field as AuthField)) {
+      errors[field as AuthField] = "Check this field and try again.";
+    }
+  }
+  return errors;
 }
 
-async function confirmPasswordReset(token: string, password: string) {
-  return apiRequest<{ reset: boolean }>("/auth/password-reset/confirm", {
-    body: { password, token },
-    method: "POST"
-  });
+export function getAuthErrorFeedback(error: unknown, mode: AuthMode) {
+  if (error instanceof ApiClientError) {
+    if (error.code === "VALIDATION_FAILED") {
+      const fieldErrors = errorsFromDetails(error.details);
+      if (mode === "forgot" && fieldErrors.email) {
+        fieldErrors.resetEmail = fieldErrors.email;
+        delete fieldErrors.email;
+      }
+      return { fieldErrors, message: "Some information needs attention. Check the highlighted fields and try again." };
+    }
+    if (error.code === "INVALID_CREDENTIALS") return { fieldErrors: {}, message: "We couldn’t sign you in. Check your details and try again." };
+    if (error.code === "CONFLICT" && mode === "signup") return { fieldErrors: {}, message: "That email or username is unavailable. Try a different one." };
+    if (error.code === "INVALID_RESET_TOKEN") return { fieldErrors: {}, message: "This reset link is invalid, expired, or has already been used." };
+    if (["ACCOUNT_BANNED", "ACCOUNT_RESTRICTED", "ACCOUNT_SUSPENDED"].includes(error.code)) {
+      return { fieldErrors: {}, message: "This account cannot complete that action right now." };
+    }
+  }
+  if (error instanceof TypeError) return { fieldErrors: {}, message: "We couldn’t reach Vibehall. Check your connection and try again." };
+  const mapped = mapErrorToSafeMessage(error);
+  return { fieldErrors: {}, message: mapped.title + " " + mapped.message };
+}
+
+function requestReset(email: string) {
+  return apiRequest<{ message: string }>("/auth/password-reset/request", { body: { email }, method: "POST" });
+}
+
+function confirmReset(token: string, password: string) {
+  return apiRequest<{ reset: boolean }>("/auth/password-reset/confirm", { body: { password, token }, method: "POST" });
 }
 
 export function AuthPage({ onNavigate }: AuthPageProps) {
   const { login, signup } = useAuth();
   const [mode, setMode] = useState<AuthMode>(readAuthMode);
-  const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState("");
-  const [emailOrUsername, setEmailOrUsername] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [values, setValues] = useState<AuthFormValues>(emptyValues);
+  const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [password, setPassword] = useState("");
-  const [resetConfirmPassword, setResetConfirmPassword] = useState("");
-  const [resetEmail, setResetEmail] = useState("");
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [username, setUsername] = useState("");
-
+  const [success, setSuccess] = useState<string | null>(null);
+  const fieldRefs = useRef<Partial<Record<AuthField, HTMLInputElement | null>>>({});
+  const errorRef = useRef<HTMLDivElement>(null);
+  const submitting = useRef(false);
   const returnTo = useMemo(readReturnTo, []);
   const resetToken = useMemo(readResetToken, []);
-  const resetTokenMissing = mode === "reset" && !resetToken;
-  const intentCopy = useMemo(() => getIntentCopy(returnTo), [returnTo]);
-  const isRoomOrActionIntent = returnTo !== "/";
-  const modeTitle =
-    mode === "login"
-      ? "Log in to continue"
-      : mode === "signup"
-        ? "Create your member account"
-        : mode === "forgot"
-          ? "Reset your password"
-          : "Choose a new password";
+  const missingToken = mode === "reset" && !resetToken;
+  const titleId = "auth-title-" + mode;
 
-  function switchMode(nextMode: AuthMode) {
-    setError(null);
-    setSuccessMessage(null);
-    setMode(nextMode);
-
-    if (nextMode === "reset") {
-      return;
+  useEffect(() => {
+    function syncMode() {
+      setMode(readAuthMode());
+      setFieldErrors({});
+      setFormError(null);
+      setSuccess(null);
     }
+    window.addEventListener("popstate", syncMode);
+    return () => window.removeEventListener("popstate", syncMode);
+  }, []);
 
-    const params = new URLSearchParams({ mode: nextMode, returnTo });
-    window.history.replaceState({}, "", `/auth?${params.toString()}`);
+  function focus(field?: AuthField) {
+    window.requestAnimationFrame(() => field ? fieldRefs.current[field]?.focus() : errorRef.current?.focus());
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    setSuccessMessage(null);
-    setIsSubmitting(true);
+  function update(field: AuthField, value: string) {
+    setValues((current) => ({ ...current, [field]: value }));
+    setFieldErrors((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  }
 
+  function switchMode(next: Exclude<AuthMode, "reset">) {
+    if (submitting.current) return;
+    setMode(next);
+    setFieldErrors({});
+    setFormError(null);
+    setSuccess(null);
+    onNavigate(createAuthModePath(next, returnTo));
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (submitting.current || missingToken) return;
+    setFormError(null);
+    setSuccess(null);
+    const validation = validateAuthForm(mode, values, resetToken);
+    const firstField = Object.keys(validation)[0] as AuthField | undefined;
+    if (firstField) {
+      setFieldErrors(validation);
+      focus(firstField);
+      return;
+    }
+    submitting.current = true;
+    setIsSubmitting(true);
     try {
       if (mode === "forgot") {
-        const data = await requestPasswordReset(resetEmail);
-        setSuccessMessage(data.message);
-        return;
-      }
-
-      if (mode === "reset") {
-        if (!resetToken) {
-          setError("This reset link is missing its token.");
-          return;
-        }
-
-        if (password !== resetConfirmPassword) {
-          setError("The new passwords do not match.");
-          return;
-        }
-
-        await confirmPasswordReset(resetToken, password);
-        setPassword("");
-        setResetConfirmPassword("");
-        switchMode("login");
-        setSuccessMessage("Your password was reset. You can log in now.");
-        return;
-      }
-
-      if (mode === "login") {
-        await login({ emailOrUsername, password });
+        const payload = createAuthPayload(mode, values) as { email: string };
+        setSuccess((await requestReset(payload.email)).message);
+      } else if (mode === "reset") {
+        const payload = createAuthPayload(mode, values, resetToken) as { password: string; token: string };
+        await confirmReset(payload.token, payload.password);
+        setValues((current) => ({ ...current, password: "", resetConfirmPassword: "" }));
+        setMode("login");
+        onNavigate(createAuthModePath("login", returnTo));
+        setSuccess("Your password was reset. You can sign in now.");
+      } else if (mode === "login") {
+        await login(createAuthPayload(mode, values) as { emailOrUsername: string; password: string });
+        onNavigate(returnTo);
       } else {
-        await signup({ displayName, email, password, username });
+        await signup(createAuthPayload(mode, values) as { displayName: string; email: string; password: string; username: string });
+        onNavigate(returnTo);
       }
-
-      onNavigate(returnTo);
-    } catch (caughtError) {
-      setError(safeErrorText(caughtError, "We could not complete this step. Please check the details and try again."));
+    } catch (caught) {
+      const feedback = getAuthErrorFeedback(caught, mode);
+      setFieldErrors(feedback.fieldErrors);
+      setFormError(feedback.message);
+      focus(Object.keys(feedback.fieldErrors)[0] as AuthField | undefined);
     } finally {
+      submitting.current = false;
       setIsSubmitting(false);
     }
   }
 
-  return (
-    <section className="auth-layout identity-layout">
-      <aside className="auth-context-panel surface-panel">
-        <p className="eyebrow">{intentCopy.label}</p>
-        <h2>{isRoomOrActionIntent ? "Keep your place in the flow." : "Enter Vibehall as a member."}</h2>
-        <p>{intentCopy.body}</p>
-        <div className="identity-step-list" aria-label="Authentication flow context">
-          <span>Browse as guest</span>
-          <span>Authenticate once</span>
-          <span>Join or host live</span>
-        </div>
-      </aside>
+  const input = (field: AuthField, props: React.ComponentProps<typeof Input>) => (
+    <Input
+      {...props}
+      onChange={(event) => update(field, event.target.value)}
+      ref={(node) => { fieldRefs.current[field] = node; }}
+      value={values[field]}
+    />
+  );
 
-      <form className="auth-panel identity-form-panel" onSubmit={handleSubmit}>
-        <div className="auth-mode-header">
-          <div>
-            <p className="eyebrow">
-              {mode === "login"
-                ? "Member login"
-                : mode === "signup"
-                  ? "New member"
-                  : mode === "forgot"
-                    ? "Password recovery"
-                    : "Reset password"}
-            </p>
-            <h2>{modeTitle}</h2>
-          </div>
-          {mode === "login" || mode === "signup" ? (
-            <div className="auth-mode-switch" aria-label="Authentication mode">
-              <button
-                aria-pressed={mode === "login"}
-                className={mode === "login" ? "is-active" : ""}
-                onClick={() => switchMode("login")}
-                type="button"
-              >
-                Log in
-              </button>
-              <button
-                aria-pressed={mode === "signup"}
-                className={mode === "signup" ? "is-active" : ""}
-                onClick={() => switchMode("signup")}
-                type="button"
-              >
-                Sign up
-              </button>
+  return (
+    <section aria-labelledby={titleId} className="auth-page">
+      <div aria-hidden="true" className="auth-page__aura" />
+      <form aria-busy={isSubmitting || undefined} className="auth-panel" noValidate onSubmit={submit}>
+        <header className="auth-panel__header">
+          <span aria-hidden="true" className="auth-panel__mark">✦</span>
+          <p className="eyebrow">{copy[mode].eyebrow}</p>
+          <h2 id={titleId}>{copy[mode].title}</h2>
+          <p className="form-intro">{copy[mode].description}</p>
+        </header>
+
+        <div className="auth-fields">
+          {mode === "login" ? (
+            <FormField error={fieldErrors.emailOrUsername} label="Email or username" required>
+              {input("emailOrUsername", { autoCapitalize: "none", autoComplete: "username", maxLength: 120, spellCheck: false, type: "text" })}
+            </FormField>
+          ) : null}
+          {mode === "signup" ? (
+            <>
+              <FormField error={fieldErrors.email} label="Email" required>
+                {input("email", { autoCapitalize: "none", autoComplete: "email", inputMode: "email", spellCheck: false, type: "email" })}
+              </FormField>
+              <FormField error={fieldErrors.username} hint="3–24 characters. Letters, numbers, and underscores only." label="Username" required>
+                {input("username", { autoCapitalize: "none", autoComplete: "username", maxLength: 24, spellCheck: false, type: "text" })}
+              </FormField>
+              <FormField error={fieldErrors.displayName} hint="The name people see across Vibehall." label="Display name" required>
+                {input("displayName", { autoComplete: "name", maxLength: 48, type: "text" })}
+              </FormField>
+            </>
+          ) : null}
+          {mode === "forgot" ? (
+            <FormField error={fieldErrors.resetEmail} label="Email" required>
+              {input("resetEmail", { autoCapitalize: "none", autoComplete: "email", inputMode: "email", spellCheck: false, type: "email" })}
+            </FormField>
+          ) : null}
+          {missingToken ? (
+            <div ref={errorRef} tabIndex={-1}>
+              <InlineError
+                action={<Button onClick={() => switchMode("forgot")} size="small" variant="text">Request a new link</Button>}
+                description="This reset link is missing its token. Request a new password reset link to continue."
+              />
             </div>
           ) : null}
+          {mode !== "forgot" && !missingToken ? (
+            <FormField
+              error={fieldErrors.password}
+              hint={mode === "login" ? undefined : "Use 8–128 characters."}
+              label={mode === "reset" ? "New password" : "Password"}
+              required
+            >
+              {input("password", { autoComplete: mode === "login" ? "current-password" : "new-password", maxLength: 128, type: "password" })}
+            </FormField>
+          ) : null}
+          {mode === "reset" && !missingToken ? (
+            <FormField error={fieldErrors.resetConfirmPassword} label="Confirm new password" required>
+              {input("resetConfirmPassword", { autoComplete: "new-password", maxLength: 128, type: "password" })}
+            </FormField>
+          ) : null}
         </div>
-
-        <p className="form-intro">
-          {mode === "forgot"
-            ? "Enter your account email. If it exists, we will send a private reset link without exposing account status."
-            : mode === "reset"
-              ? "Use the reset link from your email. The link is single-use and expires soon."
-              : isRoomOrActionIntent
-                ? "This step protects room identity and sends you back to the action you started."
-                : "Use the same identity for rooms, chat, reports, and hosting."}
-        </p>
 
         {mode === "login" ? (
-          <label>
-            Email or username
-            <input
-              autoComplete="username"
-              onChange={(event) => setEmailOrUsername(event.target.value)}
-              required
-              type="text"
-              value={emailOrUsername}
-            />
-          </label>
-        ) : mode === "signup" ? (
-          <>
-            <label>
-              Email
-              <input
-                autoComplete="email"
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                type="email"
-                value={email}
-              />
-            </label>
-            <div className="form-grid">
-              <label>
-                Username
-                <span className="field-hint">Your stable handle for login and account identity.</span>
-                <input
-                  autoComplete="username"
-                  onChange={(event) => setUsername(event.target.value)}
-                  pattern="[a-zA-Z0-9_]+"
-                  required
-                  type="text"
-                  value={username}
-                />
-              </label>
-              <label>
-                Display name
-                <span className="field-hint">The name people see in rooms, chat, and reports.</span>
-                <input
-                  autoComplete="name"
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  required
-                  type="text"
-                  value={displayName}
-                />
-              </label>
-            </div>
-          </>
-        ) : mode === "forgot" ? (
-          <label>
-            Email
-            <input
-              autoComplete="email"
-              onChange={(event) => setResetEmail(event.target.value)}
-              required
-              type="email"
-              value={resetEmail}
-            />
-          </label>
-        ) : null}
-
-        {resetTokenMissing ? (
-          <div className="form-error" role="alert">
-            This reset link is missing its token. Please request a new password reset link.
-            <div className="action-row">
-              <button className="text-action compact" onClick={() => switchMode("forgot")} type="button">
-                Request new link
-              </button>
-            </div>
+          <div className="auth-forgot-action">
+            <Button onClick={() => switchMode("forgot")} size="small" variant="text">Forgot password?</Button>
           </div>
         ) : null}
+        {success ? <ActionFeedback tone="success">{success}</ActionFeedback> : null}
+        {formError ? <div ref={errorRef} tabIndex={-1}><InlineError description={formError} /></div> : null}
 
-        {mode !== "forgot" && !resetTokenMissing ? (
-          <label>
-            {mode === "reset" ? "New password" : "Password"}
-            <input
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-              minLength={mode === "login" ? 1 : 8}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              type="password"
-              value={password}
-            />
-          </label>
-        ) : null}
-
-        {mode === "reset" && !resetTokenMissing ? (
-          <label>
-            Confirm new password
-            <input
-              autoComplete="new-password"
-              minLength={8}
-              onChange={(event) => setResetConfirmPassword(event.target.value)}
-              required
-              type="password"
-              value={resetConfirmPassword}
-            />
-          </label>
-        ) : null}
-
-        {successMessage ? <p aria-live="polite" className="form-success" role="status">{successMessage}</p> : null}
-        {error ? <InlineError description={error} /> : null}
-
-        <button className="primary-action full-width" disabled={isSubmitting || resetTokenMissing} type="submit">
-          {isSubmitting
-            ? "Please wait..."
-            : mode === "login"
-              ? "Log in"
-              : mode === "signup"
-                ? "Create account"
-                : mode === "forgot"
-                  ? "Send reset link"
-                  : "Reset password"}
-        </button>
+        <Button
+          disabled={missingToken}
+          fullWidth
+          loading={isSubmitting}
+          loadingLabel={mode === "forgot" ? "Sending reset link" : mode === "reset" ? "Resetting password" : mode === "signup" ? "Creating account" : "Signing in"}
+          size="large"
+          type="submit"
+          variant="primary"
+        >
+          {mode === "login" ? "Sign in" : mode === "signup" ? "Create account" : mode === "forgot" ? "Send reset link" : "Reset password"}
+        </Button>
 
         <div className="auth-secondary-actions">
-          {mode === "login" ? (
-            <button className="text-action" onClick={() => switchMode("forgot")} type="button">
-              Forgot password?
-            </button>
-          ) : null}
-
-          {mode === "forgot" || mode === "reset" ? (
-            <button className="text-action" onClick={() => switchMode("login")} type="button">
-              Back to login
-            </button>
-          ) : (
-            <button
-              className="text-action"
-              onClick={() => switchMode(mode === "login" ? "signup" : "login")}
-              type="button"
-            >
-              {mode === "login" ? "Create an account" : "I already have an account"}
-            </button>
-          )}
+          {mode === "login" ? <p>Don’t have an account? <Button onClick={() => switchMode("signup")} size="small" variant="text">Sign up</Button></p> : null}
+          {mode === "signup" ? <p>Already have an account? <Button onClick={() => switchMode("login")} size="small" variant="text">Sign in</Button></p> : null}
+          {mode === "forgot" || mode === "reset" ? <Button onClick={() => switchMode("login")} size="small" variant="text">Back to sign in</Button> : null}
         </div>
       </form>
     </section>

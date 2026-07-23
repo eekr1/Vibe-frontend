@@ -305,3 +305,40 @@
     justify-self: start;
   }
 }
+
+@media (max-width: 760px) {
+  .auth-page {
+    min-height: 0;
+    overflow: visible;
+    padding: var(--space-3) 0 calc(var(--space-6) + env(safe-area-inset-bottom));
+    place-items: start center;
+  }
+
+  .auth-page__aura {
+    height: 22rem;
+    opacity: 0.48;
+    top: 12rem;
+    width: min(30rem, 100vw);
+  }
+
+  .auth-page .auth-panel {
+    border-radius: var(--radius-md);
+    gap: var(--space-4);
+    padding: clamp(var(--space-5), 6vw, var(--space-6));
+  }
+
+  .auth-page .ui-input,
+  .auth-page .ui-button--large {
+    min-height: var(--control-height-large);
+  }
+
+  .auth-secondary-actions {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 360px) {
+  .auth-page .auth-panel {
+    padding-inline: var(--space-4);
+  }
+}
