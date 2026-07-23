@@ -1,7 +1,9 @@
 import {
   ChatCircleDotsIcon,
+  ClockCounterClockwiseIcon,
   EnvelopeIcon,
   GearIcon,
+  ProhibitIcon,
   SidebarSimpleIcon,
   UserPlusIcon,
   UsersThreeIcon
@@ -34,6 +36,7 @@ type RailStatus = "idle" | "loading" | "ready" | "reconnecting" | "stale" | "err
 type RailTab = "friends" | "messages" | "invites" | "requests";
 
 type Props = {
+  id?: string;
   mode: "drawer" | "rail";
   onBadgeChange: (summary: NotificationSummary) => void;
   onClose: () => void;
@@ -42,6 +45,7 @@ type Props = {
   onToggle: () => void;
   open: boolean;
   summary: NotificationSummary;
+  titleId?: string;
 };
 
 function initialRelationship(state: RelationshipState["state"]): RelationshipState {
@@ -88,7 +92,7 @@ function inviteSortValue(invite: RoomInvite) {
   return 2;
 }
 
-export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenConversation, onToggle, open, summary }: Props) {
+export function SocialRail({ id = 'social-rail', mode, onBadgeChange, onClose, onNavigate, onOpenConversation, onToggle, open, summary, titleId }: Props) {
   const [tab, setTab] = useState<RailTab>("friends");
   const [friends, setFriends] = useState<MemberProfile[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -214,7 +218,7 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
     <aside
       aria-label="Social Rail"
       className={`social-rail ${open ? "is-expanded" : "is-collapsed"} is-${mode}`}
-      id="social-rail"
+      id={id}
     >
       {mode === "rail" ? (
         <nav aria-label="Social shortcuts" className="social-rail-compact">
@@ -277,10 +281,71 @@ export function SocialRail({ mode, onBadgeChange, onClose, onNavigate, onOpenCon
         <div className="social-rail-header">
           <div>
             <p className="eyebrow">Social</p>
-            <h2>Friends now</h2>
+            <h2 id={titleId}>Friends now</h2>
           </div>
           <button aria-label="Close Social Rail" className="text-action compact" onClick={onClose} type="button">Close</button>
         </div>
+
+        {mode === 'drawer' ? (
+          <nav aria-label='Social destinations' className='social-drawer-destinations'>
+            <button
+              aria-current={currentPath === '/friends' && !currentView ? 'page' : undefined}
+              className={currentPath === '/friends' && !currentView ? 'is-active' : ''}
+              onClick={() => navigate('/friends')}
+              type='button'
+            >
+              <UsersThreeIcon aria-hidden='true' size={18} />
+              <span>Friends</span>
+            </button>
+            {directMessagesAvailable ? (
+              <button
+                aria-current={currentPath === '/messages' ? 'page' : undefined}
+                className={currentPath === '/messages' ? 'is-active' : ''}
+                onClick={() => navigate('/messages')}
+                type='button'
+              >
+                <ChatCircleDotsIcon aria-hidden='true' size={18} />
+                <span>Messages</span>
+              </button>
+            ) : null}
+            <button
+              aria-current={currentPath === '/friends' && currentView === 'invites' ? 'page' : undefined}
+              className={currentPath === '/friends' && currentView === 'invites' ? 'is-active' : ''}
+              onClick={() => navigate('/friends?view=invites')}
+              type='button'
+            >
+              <EnvelopeIcon aria-hidden='true' size={18} />
+              <span>Invites</span>
+            </button>
+            <button
+              aria-current={currentPath === '/friends' && currentView === 'watched' ? 'page' : undefined}
+              className={currentPath === '/friends' && currentView === 'watched' ? 'is-active' : ''}
+              onClick={() => navigate('/friends?view=watched')}
+              type='button'
+            >
+              <ClockCounterClockwiseIcon aria-hidden='true' size={18} />
+              <span>People You Watched With</span>
+            </button>
+            <button
+              aria-current={currentPath === '/friends' && currentView === 'blocked' ? 'page' : undefined}
+              className={currentPath === '/friends' && currentView === 'blocked' ? 'is-active' : ''}
+              onClick={() => navigate('/friends?view=blocked')}
+              type='button'
+            >
+              <ProhibitIcon aria-hidden='true' size={18} />
+              <span>Blocked</span>
+            </button>
+            <button
+              aria-current={currentPath === '/settings' ? 'page' : undefined}
+              className={currentPath === '/settings' ? 'is-active' : ''}
+              onClick={() => navigate('/settings')}
+              type='button'
+            >
+              <GearIcon aria-hidden='true' size={18} />
+              <span>Settings</span>
+            </button>
+          </nav>
+        ) : null}
 
         <div className="social-rail-summary" aria-live="polite">
           <span><strong>{summary.unreadCount}</strong> unread</span>

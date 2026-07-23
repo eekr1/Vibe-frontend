@@ -1,18 +1,28 @@
 import {
   CaretDownIcon,
+  ChatCircleDotsIcon,
+  ClockCounterClockwiseIcon,
+  CompassIcon,
+  EnvelopeIcon,
   GearIcon,
+  HouseIcon,
+  LifebuoyIcon,
+  ListIcon,
+  PlusCircleIcon,
+  ProhibitIcon,
   ShieldCheckIcon,
   SignOutIcon,
   UserCircleIcon,
-  UsersThreeIcon
+  UsersThreeIcon,
+  XIcon
 } from "@phosphor-icons/react";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
 import { useAuth } from "../auth/AuthContext";
 import type { RouteDefinition } from "../lib/routes";
 import { ConversationPanel } from "../social/ConversationPanel";
 import { getNotificationSummary, type NotificationSummary } from "../social/socialApi";
 import { SocialRail } from "../social/SocialRail";
-import { Avatar, Button, IconButton, PopoverMenu } from "./ui";
+import { Avatar, Button, Drawer, IconButton, PopoverMenu } from "./ui";
 
 type AppShellProps = {
   activeRoute: RouteDefinition;
@@ -30,6 +40,24 @@ type DesktopHeaderProps = {
 
 const hiddenSocialShells = new Set<RouteDefinition["shell"]>(["admin", "room", "utility"]);
 const emptySummary: NotificationSummary = { actionableCount: 0, unreadCount: 0 };
+
+type MobileHeaderProps = {
+  activeRoute: RouteDefinition;
+  menuOpen: boolean;
+  onMenuToggle: () => void;
+  onNavigateHome: () => void;
+  onSocialOpen: () => void;
+  socialBadge: number;
+  socialEligible: boolean;
+  socialOpen: boolean;
+};
+
+type MobileMenuItemProps = {
+  active: boolean;
+  icon: ReactElement;
+  label: string;
+  onSelect: () => void;
+};
 
 function displayCount(count: number) {
   return count > 99 ? "99+" : String(count);
@@ -87,6 +115,74 @@ function AppHeader(props: Omit<DesktopHeaderProps, "variant">) {
   return <DesktopHeader {...props} variant="app" />;
 }
 
+function MobileHeader({
+  activeRoute,
+  menuOpen,
+  onMenuToggle,
+  onNavigateHome,
+  onSocialOpen,
+  socialBadge,
+  socialEligible,
+  socialOpen
+}: MobileHeaderProps) {
+  return (
+    <header className='mobile-header' data-shell-variant={activeRoute.shell}>
+      <IconButton
+        aria-controls='mobile-navigation-drawer'
+        aria-expanded={menuOpen}
+        className='mobile-header-action'
+        icon={<ListIcon size={22} />}
+        label='Open navigation menu'
+        onClick={onMenuToggle}
+        variant='text'
+      />
+      <button
+        aria-label='Go to Vibehall home'
+        className='mobile-header-context'
+        onClick={onNavigateHome}
+        type='button'
+      >
+        <span className='mobile-header-brand'>Vibehall</span>
+        <span className='mobile-header-page'>{activeRoute.label}</span>
+      </button>
+      {socialEligible ? (
+        <span className='mobile-social-trigger'>
+          <IconButton
+            aria-controls='tablet-social-drawer'
+            aria-expanded={socialOpen}
+            className='mobile-header-action'
+            icon={<UsersThreeIcon size={21} />}
+            label={socialBadge ? 'Open Social, ' + socialBadge + ' unread or actionable' : 'Open Social'}
+            onClick={onSocialOpen}
+            variant='text'
+          />
+          {socialBadge ? (
+            <span aria-hidden='true' className='social-badge mobile-social-badge'>
+              {displayCount(socialBadge)}
+            </span>
+          ) : null}
+        </span>
+      ) : (
+        <span aria-hidden='true' className='mobile-header-spacer' />
+      )}
+    </header>
+  );
+}
+
+function MobileMenuItem({ active, icon, label, onSelect }: MobileMenuItemProps) {
+  return (
+    <button
+      aria-current={active ? 'page' : undefined}
+      className={active ? 'mobile-menu-item is-active' : 'mobile-menu-item'}
+      onClick={onSelect}
+      type='button'
+    >
+      <span aria-hidden='true' className='mobile-menu-icon'>{icon}</span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
 export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
   const Page = activeRoute.component;
   const { currentUser, isCheckingSession, logout } = useAuth();
@@ -97,6 +193,8 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
   );
   const [socialSummary, setSocialSummary] = useState<NotificationSummary>(emptySummary);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [socialDrawerOpen, setSocialDrawerOpen] = useState(false);
   const profileTriggerRef = useRef<HTMLButtonElement>(null);
   const socialBadge = socialSummary.unreadCount + socialSummary.actionableCount;
 
@@ -111,11 +209,34 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
 
   useEffect(() => {
     setProfileMenuOpen(false);
+    setMobileMenuOpen(false);
+    setSocialDrawerOpen(false);
     if (!socialEligible) {
       setDockedConversationId(null);
       setDockedMinimized(false);
     }
   }, [activeRoute.path, socialEligible]);
+
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 1041px)');
+    const mobile = window.matchMedia('(max-width: 639px)');
+    const syncResponsiveOverlays = () => {
+      if (desktop.matches) {
+        setMobileMenuOpen(false);
+        setSocialDrawerOpen(false);
+      } else {
+        setProfileMenuOpen(false);
+        if (mobile.matches) setSocialDrawerOpen(false);
+      }
+    };
+    syncResponsiveOverlays();
+    desktop.addEventListener('change', syncResponsiveOverlays);
+    mobile.addEventListener('change', syncResponsiveOverlays);
+    return () => {
+      desktop.removeEventListener('change', syncResponsiveOverlays);
+      mobile.removeEventListener('change', syncResponsiveOverlays);
+    };
+  }, []);
 
   useEffect(() => {
     if (isCheckingSession) return;
@@ -147,6 +268,19 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
   function navigateFromProfile(path: string) {
     closeProfileMenu();
     onNavigate(path);
+  }
+
+  function navigateFromMobileMenu(path: string) {
+    setMobileMenuOpen(false);
+    onNavigate(path);
+  }
+
+  function mobilePathIsActive(path: string) {
+    const target = new URL(path, window.location.origin);
+    if (target.pathname !== window.location.pathname) return false;
+    const targetView = target.searchParams.get('view');
+    const currentView = new URLSearchParams(window.location.search).get('view');
+    return targetView ? targetView === currentView : currentView === null;
   }
 
   const accountArea = isCheckingSession ? (
@@ -206,6 +340,26 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
     </div>
   );
 
+  const primaryMobileItems = primaryRoutes
+    .filter((route) => currentUser || route.path !== '/create-room')
+    .map((route) => ({
+      icon: route.path === '/'
+        ? <HouseIcon size={20} />
+        : route.path === '/discover'
+          ? <CompassIcon size={20} />
+          : <PlusCircleIcon size={20} />,
+      label: route.label,
+      path: route.path
+    }));
+  const socialMobileItems = currentUser ? [
+    { icon: <UsersThreeIcon size={20} />, label: 'Friends', path: '/friends' },
+    { icon: <ChatCircleDotsIcon size={20} />, label: 'Messages', path: '/messages' },
+    { icon: <EnvelopeIcon size={20} />, label: 'Invites', path: '/friends?view=invites' },
+    { icon: <ClockCounterClockwiseIcon size={20} />, label: 'People You Watched With', path: '/friends?view=watched' },
+    { icon: <ProhibitIcon size={20} />, label: 'Blocked', path: '/friends?view=blocked' },
+    { icon: <GearIcon size={20} />, label: 'Settings', path: '/settings' }
+  ] : [];
+
   const shellClasses = [
     "app-shell",
     "app-shell--" + activeRoute.shell,
@@ -227,12 +381,141 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
 
   return (
     <div className={shellClasses}>
-      <Header
-        accountArea={accountArea}
+      <div className='desktop-shell-header'>
+        <Header
+          accountArea={accountArea}
+          activeRoute={activeRoute}
+          onNavigate={onNavigate}
+          primaryRoutes={primaryRoutes}
+        />
+      </div>
+      <MobileHeader
         activeRoute={activeRoute}
-        onNavigate={onNavigate}
-        primaryRoutes={primaryRoutes}
+        menuOpen={mobileMenuOpen}
+        onMenuToggle={() => {
+          setSocialDrawerOpen(false);
+          setMobileMenuOpen((value) => !value);
+        }}
+        onNavigateHome={() => onNavigate('/')}
+        onSocialOpen={() => {
+          setMobileMenuOpen(false);
+          setSocialDrawerOpen(true);
+        }}
+        socialBadge={socialBadge}
+        socialEligible={socialEligible}
+        socialOpen={socialDrawerOpen}
       />
+
+      {mobileMenuOpen ? (
+        <Drawer
+          className='mobile-navigation-drawer'
+          id='mobile-navigation-drawer'
+          onClose={() => setMobileMenuOpen(false)}
+          titleId='mobile-navigation-title'
+        >
+          <div className='mobile-menu-header'>
+            <div>
+              <p className='eyebrow'>Navigation</p>
+              <h2 id='mobile-navigation-title'>Vibehall</h2>
+            </div>
+            <IconButton
+              icon={<XIcon size={20} />}
+              label='Close navigation menu'
+              onClick={() => setMobileMenuOpen(false)}
+              variant='text'
+            />
+          </div>
+
+          {isCheckingSession ? (
+            <span aria-label='Checking account' className='mobile-menu-identity is-loading' role='status'>
+              <span aria-hidden='true' className='account-placeholder-avatar' />
+              <span aria-hidden='true' className='account-placeholder-copy' />
+            </span>
+          ) : currentUser ? (
+            <div className='mobile-menu-identity'>
+              <Avatar displayName={currentUser.displayName} size='default' src={currentUser.avatarUrl} />
+              <span className='account-copy'>
+                <strong className='account-name'>{currentUser.displayName}</strong>
+                <span className='account-meta'>@{currentUser.username}</span>
+              </span>
+            </div>
+          ) : null}
+
+          <nav aria-label='Mobile navigation' className='mobile-menu-navigation'>
+            <div className='mobile-menu-group'>
+              <p className='mobile-menu-group-label'>Main</p>
+              {primaryMobileItems.map((item) => (
+                <MobileMenuItem
+                  active={mobilePathIsActive(item.path)}
+                  icon={item.icon}
+                  key={item.path}
+                  label={item.label}
+                  onSelect={() => navigateFromMobileMenu(item.path)}
+                />
+              ))}
+            </div>
+
+            {socialMobileItems.length ? (
+              <div className='mobile-menu-group'>
+                <p className='mobile-menu-group-label'>Social</p>
+                {socialMobileItems.map((item) => (
+                  <MobileMenuItem
+                    active={mobilePathIsActive(item.path)}
+                    icon={item.icon}
+                    key={item.path}
+                    label={item.label}
+                    onSelect={() => navigateFromMobileMenu(item.path)}
+                  />
+                ))}
+              </div>
+            ) : null}
+
+            <div className='mobile-menu-group'>
+              <p className='mobile-menu-group-label'>Account</p>
+              {currentUser ? (
+                <>
+                  <MobileMenuItem
+                    active={mobilePathIsActive('/profile')}
+                    icon={<UserCircleIcon size={20} />}
+                    label='Profile'
+                    onSelect={() => navigateFromMobileMenu('/profile')}
+                  />
+                  <MobileMenuItem
+                    active={mobilePathIsActive('/support')}
+                    icon={<LifebuoyIcon size={20} />}
+                    label='Help & Support'
+                    onSelect={() => navigateFromMobileMenu('/support')}
+                  />
+                  {currentUser.role === 'admin' ? (
+                    <MobileMenuItem
+                      active={mobilePathIsActive('/admin')}
+                      icon={<ShieldCheckIcon size={20} />}
+                      label='Admin'
+                      onSelect={() => navigateFromMobileMenu('/admin')}
+                    />
+                  ) : null}
+                  <button
+                    className='mobile-menu-item is-danger'
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      void logout();
+                    }}
+                    type='button'
+                  >
+                    <SignOutIcon aria-hidden='true' size={20} />
+                    <span>Log out</span>
+                  </button>
+                </>
+              ) : !isCheckingSession ? (
+                <div className='mobile-menu-auth-actions'>
+                  <Button fullWidth onClick={() => navigateAuth('login')} variant='secondary'>Log in</Button>
+                  <Button fullWidth onClick={() => navigateAuth('signup')} variant='primary'>Sign up</Button>
+                </div>
+              ) : null}
+            </div>
+          </nav>
+        </Drawer>
+      ) : null}
 
       {profileMenuOpen && currentUser ? (
         <PopoverMenu
@@ -284,19 +567,46 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
 
       {socialEligible ? (
         <>
-          <SocialRail
-            mode="rail"
-            onBadgeChange={setSocialSummary}
-            onClose={() => setSocialExpanded(false)}
-            onNavigate={onNavigate}
-            onOpenConversation={(id) => {
-              setDockedConversationId(id);
-              setDockedMinimized(false);
-            }}
-            onToggle={() => setSocialExpanded((value) => !value)}
-            open={socialExpanded}
-            summary={socialSummary}
-          />
+          <div className='desktop-social-rail'>
+            <SocialRail
+              mode="rail"
+              onBadgeChange={setSocialSummary}
+              onClose={() => setSocialExpanded(false)}
+              onNavigate={onNavigate}
+              onOpenConversation={(id) => {
+                setDockedConversationId(id);
+                setDockedMinimized(false);
+              }}
+              onToggle={() => setSocialExpanded((value) => !value)}
+              open={socialExpanded}
+              summary={socialSummary}
+            />
+          </div>
+          {socialDrawerOpen ? (
+            <Drawer
+              className='tablet-social-drawer'
+              id='tablet-social-drawer'
+              onClose={() => setSocialDrawerOpen(false)}
+              titleId='tablet-social-drawer-title'
+            >
+              <SocialRail
+                id='tablet-social-rail'
+                mode='drawer'
+                onBadgeChange={setSocialSummary}
+                onClose={() => setSocialDrawerOpen(false)}
+                onNavigate={onNavigate}
+                onOpenConversation={(id) => {
+                  setSocialDrawerOpen(false);
+                  setDockedConversationId(id);
+                  setDockedMinimized(false);
+                }}
+                onToggle={() => undefined}
+                open
+                summary={socialSummary}
+                titleId='tablet-social-drawer-title'
+              />
+            </Drawer>
+          ) : null}
           {dockedConversationId ? (
             <div className="docked-conversation-wrapper">
               <ConversationPanel
