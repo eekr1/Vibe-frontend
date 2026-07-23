@@ -51,7 +51,8 @@ describe("Wave 03 state model and context preservation", () => {
   it("keeps loaded Discover and Messages content instead of clearing it on refresh failure", () => {
     const discover = source("src/pages/DiscoverShellPage.tsx");
     const messages = source("src/pages/MessagesPage.tsx");
-    expect(discover).toContain("const isInitialLoading = isLoading && rooms.length === 0 && !error");
+    expect(discover).toContain("const isInitialLoading = !hasResolvedRooms && !pageError");
+    expect(discover).toContain("setIsRefreshing(hasResolvedRooms)");
     expect(discover).not.toContain("setRooms([])");
     expect(messages).not.toContain("setConversations([])");
     expect(messages).toContain("silent: true");

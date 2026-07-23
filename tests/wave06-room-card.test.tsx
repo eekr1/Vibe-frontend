@@ -122,13 +122,13 @@ describe("Wave 06 shared RoomCard", () => {
     const discover = source("src/pages/DiscoverShellPage.tsx");
 
     expect(discover).toContain('import { RoomCard } from "../rooms/RoomCard"');
-    expect(discover).toContain("<RoomCard key={room.id} onNavigate={onNavigate} room={room} />");
-    expect(discover).toContain("listPublicRooms({");
-    expect(discover).toContain("categorySlug: categorySlug || undefined");
-    expect(discover).toContain("search: deferredSearch");
+    expect(discover).toContain("<RoomCard onNavigate={onNavigate} room={room} />");
+    expect(discover).toContain("listPublicRooms(createDiscoverRequest(appliedQuery))");
+    expect(discover).toContain("categorySlug: query.categorySlug || undefined");
+    expect(discover).toContain("search: normalizeSearch(query.search) || undefined");
     expect(discover).toContain("sort");
-    expect(discover).toContain("cursor: nextCursor");
-    expect(discover).toContain("setRooms((currentRooms) => [...currentRooms, ...result.rooms])");
+    expect(discover).toContain("cursor: cursor || undefined");
+    expect(discover).toContain("setRooms((currentRooms) => {");
     expect(discover).not.toContain('className="room-card"');
   });
 

@@ -81,8 +81,8 @@
   .admin-list-grid,
   .admin-section-grid,
   .create-room-layout,
-  .discover-control-panel,
-  .discover-hero,
+  .discover-heading,
+  .discover-query-toolbar,
   .form-grid,
   .home-hero,
   .home-split-band,
@@ -115,7 +115,6 @@
   }
 
   .brand,
-  .discover-hero-actions,
   .nav,
   .shell-actions,
   .account-strip,
@@ -171,6 +170,7 @@
     max-width: 100%;
   }
 
+  .discover-heading > .ui-button,
   .discover-load-more,
   .shell-create-action {
     width: fit-content;
@@ -197,8 +197,11 @@
 }
 
 @media (max-width: 480px) {
+  .discover-query-selects {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .action-row > button,
-  .discover-hero-actions > button,
   .launch-action-row > button {
     flex: 1 1 10rem;
     width: 100%;

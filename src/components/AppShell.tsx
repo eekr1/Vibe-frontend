@@ -557,7 +557,7 @@ export function AppShell({ activeRoute, onNavigate, routes }: AppShellProps) {
       ) : null}
 
       <main className="main-surface">
-        {activeRoute.shell !== "home" ? (
+        {activeRoute.shell !== "home" && activeRoute.path !== "/discover" ? (
           <section aria-labelledby="page-title" className="page-masthead">
             <p className="eyebrow">{activeRoute.label}</p>
             <h1 id="page-title">{activeRoute.title}</h1>
