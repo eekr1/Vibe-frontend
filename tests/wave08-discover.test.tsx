@@ -117,6 +117,10 @@ describe("Wave 08 Discover policy and state boundaries", () => {
     expect(discover).toContain("<RoomCardSkeleton />");
     expect(discover).toContain('aria-live="polite"');
     expect(discover).toContain('aria-busy={isRefreshing}');
+    expect(discover).toContain('aria-label="Quick category filters"');
+    expect(discover).toContain("categories.map((category) => (");
+    expect(discover).toContain("aria-pressed={appliedCategorySlug === category.slug}");
+    expect(discover).toContain("onClick={() => updateCategory(category.slug)}");
     expect(shell).toContain('activeRoute.path !== "/discover"');
   });
 
@@ -124,6 +128,8 @@ describe("Wave 08 Discover policy and state boundaries", () => {
     const pages = source("src/styles/pages.css");
     const responsive = source("src/styles/responsive.css");
     expect(pages).toContain(".discover-query-toolbar");
+    expect(pages).toContain(".discover-category-shortcuts");
+    expect(pages).toContain("overflow-x: auto");
     expect(pages).toContain("background: var(--color-surface-standard)");
     expect(pages).not.toContain("backdrop-filter");
     expect(responsive).toContain(".discover-query-selects");

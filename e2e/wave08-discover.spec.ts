@@ -76,7 +76,11 @@ async function mockDiscover(page: Page, options: DiscoverMockOptions = {}) {
       return json(200, envelope({
         categories: [
           { id: "category-music", name: "Music", slug: "music" },
-          { id: "category-gaming", name: "Gaming", slug: "gaming" }
+          { id: "category-gaming", name: "Gaming", slug: "gaming" },
+          { id: "category-study", name: "Study", slug: "study" },
+          { id: "category-anime", name: "Anime", slug: "anime" },
+          { id: "category-podcast", name: "Podcast", slug: "podcast" },
+          { id: "category-lofi", name: "Lo-fi", slug: "lofi" }
         ]
       }));
     }
@@ -172,6 +176,35 @@ test("Discover hydrates URL query, writes supported values and restores controls
       ["categorySlug", "cursor", "limit", "search", "sort"].includes(key)
     )).toBe(true);
   }
+});
+
+test("Discover category shortcuts mirror real categories and stay synchronized with the query control", async ({ page }) => {
+  await mockDiscover(page);
+  await page.setViewportSize({ height: 812, width: 375 });
+  await page.goto("/discover?categorySlug=music");
+
+  const shortcuts = page.getByRole("group", { name: "Quick category filters" });
+  const category = page.getByRole("combobox", { name: "Category" });
+  await expect(shortcuts.getByRole("button")).toHaveCount(7);
+  await expect(shortcuts.getByRole("button", { name: "Music" })).toHaveAttribute("aria-pressed", "true");
+  await expect(shortcuts.getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "false");
+
+  await category.selectOption("lofi");
+  const lofiShortcut = shortcuts.getByRole("button", { name: "Lo-fi" });
+  await expect(lofiShortcut).toHaveAttribute("aria-pressed", "true");
+  await expect(lofiShortcut).toBeInViewport();
+
+  await shortcuts.getByRole("button", { name: "Gaming" }).click();
+  await expect(category).toHaveValue("gaming");
+  await expect(page).toHaveURL(/categorySlug=gaming/);
+  await expect(shortcuts.getByRole("button", { name: "Gaming" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("heading", { name: "No live Gaming rooms yet." })).toBeVisible();
+
+  await shortcuts.getByRole("button", { name: "All" }).click();
+  await expect(category).toHaveValue("");
+  await expect(page).not.toHaveURL(/categorySlug=/);
+  await expect(shortcuts.getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: /Enter Night room all-newest,/ })).toBeVisible();
 });
 
 test("Discover preserves the grid during quiet refresh and ignores a late stale response", async ({ page }) => {

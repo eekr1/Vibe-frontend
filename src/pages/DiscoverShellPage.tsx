@@ -138,6 +138,7 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
   const [search, setSearch] = useState(initialQuery.search);
   const [sort, setSort] = useState<DiscoverSort>(initialQuery.sort);
   const categoryRequestSequence = useRef(0);
+  const categoryShortcutsRef = useRef<HTMLDivElement>(null);
   const loadMoreSequence = useRef(0);
   const queryRequestSequence = useRef(0);
   const activeQueryKey = useRef("");
@@ -239,6 +240,13 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
     window.addEventListener("popstate", syncQueryFromLocation);
     return () => window.removeEventListener("popstate", syncQueryFromLocation);
   }, [categories, categoryStatus]);
+
+  useEffect(() => {
+    const selectedShortcut = categoryShortcutsRef.current?.querySelector<HTMLElement>(
+      '[aria-pressed="true"]'
+    );
+    selectedShortcut?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [appliedCategorySlug, categories]);
 
   useEffect(() => {
     if (skipSearchHistoryWrite.current) {
@@ -393,6 +401,35 @@ export function DiscoverShellPage({ onNavigate }: DiscoverShellPageProps) {
           />
         ) : null}
       </div>
+
+      {categoryStatus === "ready" && categories.length > 0 ? (
+        <div
+          aria-label="Quick category filters"
+          className="discover-category-shortcuts"
+          ref={categoryShortcutsRef}
+          role="group"
+        >
+          <button
+            aria-pressed={!appliedCategorySlug}
+            className="discover-category-chip"
+            onClick={() => updateCategory("")}
+            type="button"
+          >
+            All
+          </button>
+          {categories.map((category) => (
+            <button
+              aria-pressed={appliedCategorySlug === category.slug}
+              className="discover-category-chip"
+              key={category.id}
+              onClick={() => updateCategory(category.slug)}
+              type="button"
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       <div className="discover-result-bar">
         <div>
