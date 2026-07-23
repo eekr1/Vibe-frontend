@@ -117,6 +117,7 @@ describe("Wave 07 Home semantics, asset and visual boundaries", () => {
   it("keeps Home styling token-driven, matte and responsive", () => {
     const pages = source("src/styles/pages.css");
     const responsive = source("src/styles/responsive.css");
+    const shell = source("src/styles/shell.css");
 
     expect(pages).toContain("color: var(--color-accent)");
     expect(pages).toContain("background: var(--color-surface-standard)");
@@ -125,5 +126,8 @@ describe("Wave 07 Home semantics, asset and visual boundaries", () => {
     expect(pages).not.toContain("backdrop-filter");
     expect(responsive).toContain("@media (max-width: 760px)");
     expect(responsive).toContain("grid-auto-columns: min(82vw, 18rem)");
+    expect(shell).toContain("--social-rail-active-width: var(--social-rail-closed-width)");
+    expect(shell).toContain("calc((100% + var(--social-rail-active-width) - var(--container-page)) / 2)");
+    expect(shell).toContain("width: calc(100% - var(--social-rail-active-width))");
   });
 });

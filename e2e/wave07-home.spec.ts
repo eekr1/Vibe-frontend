@@ -133,10 +133,26 @@ test("guest Home delivers the first-view promise, real room evidence and safe CT
 });
 
 test("member Home sends Open a room directly to the existing Create Room route", async ({ page }) => {
+  await page.setViewportSize({ height: 900, width: 1440 });
   await mockHome(page, { auth: "member", discover: "rooms" });
   await page.goto("/");
 
   await expect(page.getByText("Ada Lovelace").first()).toBeVisible();
+
+  const shellBalance = await page.locator("main.main-surface").evaluate((surface) => {
+    const shell = surface.closest(".app-shell");
+    const rail = shell?.querySelector(".social-rail");
+    const surfaceRect = surface.getBoundingClientRect();
+    const railRect = rail?.getBoundingClientRect();
+    const availableLeft = railRect?.right ?? 0;
+    const leftSpace = surfaceRect.left - availableLeft;
+    const rightSpace = window.innerWidth - surfaceRect.right;
+
+    return { delta: Math.abs(leftSpace - rightSpace), surfaceWidth: surfaceRect.width };
+  });
+  expect(shellBalance.surfaceWidth).toBeGreaterThan(1000);
+  expect(shellBalance.delta).toBeLessThanOrEqual(1);
+
   await page.getByRole("button", { name: "Open a room" }).first().click();
   await expect(page).toHaveURL(/\/create-room$/);
 });
